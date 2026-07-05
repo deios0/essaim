@@ -54,7 +54,7 @@ func TestDedupTitleHashReinforcesNotDuplicates(t *testing.T) {
 	}
 }
 
-// Test 29: 25 reinforces ⇒ count 26 (NO Brain cap of 20).
+// Test 29: 25 reinforces ⇒ count 26 (NO reference engine cap of 20).
 func TestReinforceHasNoBrainCap(t *testing.T) {
 	s := New(t.TempDir())
 	s.SetNow(func() time.Time { return at(0) })
@@ -414,7 +414,7 @@ func TestNoReinforceStillDecaysFromFrontmatter(t *testing.T) {
 // sub-second precision, a naive rt.After(last) keeps firing on EVERY sweep
 // (rt=12:00:00.5 is forever "after" the second-truncated disk value 12:00:00)
 // → a self-perpetuating frontmatter re-write (churn / dirty git). The existing
-// tests miss this because at() uses a zero-nanosecond clock. This test uses a
+// tests miss this because at uses a zero-nanosecond clock. This test uses a
 // sub-second clock and a frontmatter anchor ALREADY at the same second, then
 // asserts the next sweep is a true no-op (file bytes + mtime unchanged).
 func TestReinforceReAnchorNoChurnAtSecondGranularity(t *testing.T) {

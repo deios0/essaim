@@ -1,5 +1,5 @@
 // Package extract implements the M3 layered learning loop: T0 sigil
-// (deterministic), T1 heuristic (zero-token, ported from the trinity Brain's
+// (deterministic), T1 heuristic (zero-token, ported from the reference engine's
 // lexicon + quality scorer), and T2 cheap async LLM gate (opt-in, default OFF).
 // It consumes a captured exchange (the pre-injection messages + the assistant
 // text), classifies it false-positive-averse, and writes a `draft` rule to
@@ -19,8 +19,8 @@ import (
 	"unicode/utf8"
 )
 
-// credentialPattern is the byte-for-byte port of the trinity Brain
-// CREDENTIAL_PATTERN (utils.py:16-43), RE2-safe (no backrefs; (?i) is fine over
+// credentialPattern is the byte-for-byte port of the reference engine
+// CREDENTIAL_PATTERN, RE2-safe (no backrefs; (?i) is fine over
 // the JWT alternation). ONE pattern, THREE readers — the sigil scan (§2.3), the
 // capture redaction (§4.7), and the NativeFileEmitter refusal (§5.4) all share
 // it. A local store NEVER persists a key, even one the user explicitly typed
@@ -128,7 +128,7 @@ var awsIntentPattern = regexp.MustCompile(`(?i)secret[ _-]access[ _-]key`)
 // text-derived indices, because lowercasing can SHRINK byte length (e.g. U+212A
 // Kelvin → "k"), making a full-lowered string shorter than text and panicking on
 // `lowered[lo:hi]` when lo>len(lowered) (review defect D2, a reachable panic on
-// the relay goroutine with no recover()).
+// the relay goroutine with no recover).
 func hasAWSContext(text string, lo, hi int) bool {
 	if lo < 0 {
 		lo = 0
@@ -319,7 +319,7 @@ func RedactCredentials(text string) string {
 	return redactAWSSecretKeys(out)
 }
 
-// noisePatterns ports Brain NOISE_PATTERNS (utils.py:46-63), re.search semantics
+// noisePatterns ports reference engine NOISE_PATTERNS, re.search semantics
 // (unanchored). The (?i) inline flag is preserved per-pattern as in Python.
 var noisePatterns = mustCompileAll([]string{
 	`(?i)\btraceback\b`,
@@ -340,7 +340,7 @@ var noisePatterns = mustCompileAll([]string{
 	`(?i)\bexit code \d`,
 })
 
-// lowSignalPatterns ports Brain LOW_SIGNAL_PATTERNS (utils.py:65-68). Python
+// lowSignalPatterns ports reference engine LOW_SIGNAL_PATTERNS. Python
 // applies them with re.match (anchored at START), so each is anchored with ^.
 // The ones already carrying ^ keep it; the (?i)^ok$ etc. are anchored as-is.
 var lowSignalPatterns = mustCompileAll([]string{
@@ -348,7 +348,7 @@ var lowSignalPatterns = mustCompileAll([]string{
 	`^\d+$`, `(?i)^n/?a$`, `(?i)^yes$`, `(?i)^no$`,
 })
 
-// preferenceSignals ports Brain PREFERENCE_SIGNALS (utils.py:70-78), EN+RU,
+// preferenceSignals ports reference engine PREFERENCE_SIGNALS, EN+RU,
 // re.search semantics (unanchored).
 //
 // PORT NOTE (Unicode word boundaries): Python's `re` `\b` is Unicode-aware, so
@@ -402,8 +402,8 @@ func anyMatchAnchored(pats []*regexp.Regexp, text string) bool {
 	return false
 }
 
-// Quality is the result of classifyQuality (port of Brain classify_quality
-// utils.py:81-138).
+// Quality is the result of classifyQuality (port of reference engine classify_quality
+//).
 type Quality struct {
 	Score    float64
 	Flags    []string
@@ -411,17 +411,17 @@ type Quality struct {
 	Hint     string // "validated" | "new" | "rejected"
 }
 
-// classifyQuality ports Brain classify_quality (utils.py:81-138) exactly:
+// classifyQuality ports reference engine classify_quality exactly:
 // additive/clamp scoring with a credential HARD-REJECT, length/noise/low-signal
 // penalties and a preference bonus. The length check uses utf8.RuneCountInString
-// (M3-R10) — Python len() counts runes, so a 22-byte/11-rune RU string must NOT
+// (M3-R10) — Python len counts runes, so a 22-byte/11-rune RU string must NOT
 // falsely flag too_short.
 func classifyQuality(title, content string) Quality {
 	text := strings.TrimSpace(title + " " + content)
 	score := 0.5
 	var flags []string
 
-	// Hard reject: credentials (utils.py:94-95). The marker check is P1-b defense
+	// Hard reject: credentials. The marker check is P1-b defense
 	// in depth: even if an upstream redaction wiped a key's BEGIN header (so the
 	// whole-block pattern no longer matches), a residual BEGIN/END PRIVATE KEY
 	// marker still means a key body was present → never persist it. (The P1-d
@@ -488,7 +488,7 @@ func classifyQuality(title, content string) Quality {
 
 // round3 rounds to 3 decimals, matching Python round(score, 3).
 func round3(f float64) float64 {
-	// round half away from zero to mirror Python's round() closely enough for
+	// round half away from zero to mirror Python's round closely enough for
 	// the golden table (all fixtures are .x5 / .x clean values).
 	scaled := f * 1000
 	if scaled >= 0 {
@@ -499,7 +499,7 @@ func round3(f float64) float64 {
 	return scaled / 1000
 }
 
-// normalizeTitle ports Brain normalize_title (utils.py:6-8): strip → lowercase
+// normalizeTitle ports reference engine normalize_title: strip → lowercase
 // → collapse whitespace.
 func normalizeTitle(title string) string {
 	return collapseWS(strings.ToLower(strings.TrimSpace(title)))
@@ -510,7 +510,7 @@ var wsRun = regexp.MustCompile(`\s+`)
 func collapseWS(s string) string { return wsRun.ReplaceAllString(s, " ") }
 
 // titleHash is the dedup primary key: sha256 of the normalized title (port of
-// compute_title_hash, utils.py:11-13).
+// compute_title_hash).
 func titleHash(title string) string {
 	sum := sha256.Sum256([]byte(normalizeTitle(title)))
 	return hex.EncodeToString(sum[:])

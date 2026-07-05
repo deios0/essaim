@@ -69,7 +69,7 @@ const (
 func (h Hint) atLeastNew() bool { return h == HintValidated || h == HintNew }
 
 // Reinforce records a repeated correction matching an existing rule's title-hash
-// (port lessons.py:109-122). It bumps the LOCAL reinforce counter (NOT
+// (port). It bumps the LOCAL reinforce counter (NOT
 // frontmatter), and if the resulting state crosses a class boundary the next
 // Sweep persists it. Returns the new local reinforce count. hint is the latest
 // correction's quality hint: a `validated` hint upgrades new/draft→validated
@@ -120,7 +120,7 @@ func (s *Sweeper) Sweep() (SweepResult, error) {
 		//
 		// CHURN FIX (P2-reinforce-ts): the frontmatter last_reinforced_at is
 		// persisted at SECOND granularity (RFC3339, see writeFrontmatter's
-		// last.UTC().Format(time.RFC3339)). The in-session reinforce clock, however,
+		// last.UTC.Format(time.RFC3339)). The in-session reinforce clock, however,
 		// carries sub-second precision. A naive rt.After(last) therefore re-fires on
 		// EVERY sweep (rt=12:00:00.5 is forever "after" the second-truncated disk
 		// value 12:00:00) → a self-perpetuating frontmatter re-write (dirty git). We

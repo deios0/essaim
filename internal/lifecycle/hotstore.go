@@ -31,8 +31,8 @@ const (
 // hotStore is the LOCAL ephemeral-hot store of reinforce counters keyed by
 // title-hash (the 3-class discipline: hot counters NEVER touch frontmatter — the
 // frontmatter-immutability rule). A reinforce increments the counter and records the time;
-// the sweep reads the count to decide a promote. There is NO weight cap (Brain
-// has none, lessons.py:110 is a bare `weight += 1`); if a cap were added it would
+// the sweep reads the count to decide a promote. There is NO weight cap (reference engine
+// has none is a bare `weight += 1`); if a cap were added it would
 // be an explicit oikos policy.
 //
 // The counts are mirrored to a per-vault sidecar (_inbox/.counts.json) so a
@@ -128,7 +128,7 @@ func (h *hotStore) persist() {
 // reinforce bumps the local reinforce counter for a title-hash and returns the
 // new count. validatedHint upgrades the sticky validated flag (never
 // downgrades); atLeastNew records whether THIS reinforce's quality hint was
-// >= new (latest-wins — the gate the promote reads, RISK-4). NO cap (Brain
+// >= new (latest-wins — the gate the promote reads, RISK-4). NO cap (reference engine
 // parity). The new state is persisted to the sidecar so it survives a restart
 // (P0-2).
 func (h *hotStore) reinforce(hash string, validatedHint, atLeastNew bool, now time.Time) int {

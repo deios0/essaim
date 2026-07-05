@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-// Test 18 (F-10): the Go classify_quality port matches Brain on a shared golden
+// Test 18 (F-10): the Go classify_quality port matches reference engine on a shared golden
 // table INCLUDING the §2.7.1 adversary rows AND RU multibyte-near-20-boundary
 // fixtures. The numbers are the spec's empirically-verified Python outputs.
 func TestClassifyQualityParityGolden(t *testing.T) {
-	// Numbers are the ACTUAL outputs of the real Brain Python classify_quality
-	// (utils.py), captured by running it directly — the binding source of truth
+	// Numbers are the ACTUAL outputs of the real reference engine Python classify_quality
+	//, captured by running it directly — the binding source of truth
 	// per spec §2.7.1 ("the real Python classify_quality was run on the adversary
 	// strings"). Note the RU `у меня 8 лет опыта` is 18 RUNES (<20) so Python
 	// flags too_short → 0.1/rejected (the spec table's "0.5" was for the EN
@@ -163,7 +163,7 @@ func indexOf(s, sub string) int {
 	return -1
 }
 
-// normalizeTitle + titleHash port parity (utils.py:6-13).
+// normalizeTitle + titleHash port parity.
 func TestNormalizeTitleAndHash(t *testing.T) {
 	if got := normalizeTitle("  Prefer   Tabs\tOver Spaces  "); got != "prefer tabs over spaces" {
 		t.Fatalf("normalizeTitle = %q", got)
@@ -292,7 +292,7 @@ func TestClassifyQualityDoesNotDropParaphrasedCorrections(t *testing.T) {
 	// Legit corrections phrased as plain statements — NO directive/preference token
 	// (no prefer/should/must/always/never/avoid/rule/decision/because/correct/don't).
 	// Each must clear the `new` floor (score >= 0.45, hint new or validated) so the
-	// lifecycle's atLeastNew() promote gate can still see it.
+	// lifecycle's atLeastNew promote gate can still see it.
 	paraphrases := []string{
 		"we indent with tabs in this repository, not spaces", // states the tabs preference, no directive word
 		"the team uses PostgreSQL for the main datastore",    // states the DB choice as a fact

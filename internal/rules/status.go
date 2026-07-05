@@ -35,7 +35,7 @@ var nonInjectableStatuses = map[string]bool{
 // Binding reading (M3-R1 + the M2 no-regression constraint): the whitelist the
 // spec names is {active, live}; an UNSET/empty status is the legacy default and
 // stays injectable (a status-less hand-authored rule keeps working, exactly as
-// M2 — Brain's "NULL=legacy" philosophy). Only the explicitly non-injectable
+// M2 — the reference engine's "NULL=legacy" philosophy). Only the explicitly non-injectable
 // statuses (draft/superseded/rejected) are walled out. So a `draft` in _inbox/
 // can never enter the index, while every active/live/legacy rule still does.
 func isInjectable(r Rule) bool {
@@ -76,7 +76,7 @@ func InjectableRules(rs []Rule) []Rule {
 // demotionImmune reports whether a rule is immune to demote/supersede-by-decay
 // (M3-R7, §3.5). A rule is immune iff it is timeless, a guardrail (tier 2), OR
 // its criticality is >= 8. Criticality is parsed from a STRING (Rule.Criticality
-// is `string`, matching the YAML frontmatter); Brain stores it as Optional[int]
+// is `string`, matching the YAML frontmatter); reference engine stores it as Optional[int]
 // (">=8 demotion-immune; NULL/legacy treated as 5"). The compare is Atoi-guarded
 // so it NEVER panics: empty/legacy/non-numeric ("high") → treated as 5 → NOT
 // immune.

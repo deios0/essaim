@@ -54,7 +54,7 @@ func LoadVaultWithPaths(dir string) ([]RuleWithPath, error) {
 
 var wsRunPersist = regexp.MustCompile(`\s+`)
 
-// normalizeTitle ports Brain normalize_title (utils.py:6-8): strip → lowercase →
+// normalizeTitle ports reference engine normalize_title: strip → lowercase →
 // collapse whitespace. Mirrors extract.normalizeTitle so the title-hash dedup
 // key is identical across the extractor and the sweep.
 func normalizeTitle(title string) string {
@@ -62,7 +62,7 @@ func normalizeTitle(title string) string {
 }
 
 // TitleHashOf is the dedup primary key: sha256 of the normalized title (port of
-// compute_title_hash, utils.py:11-13). Shared by the extractor (write-time) and
+// compute_title_hash). Shared by the extractor (write-time) and
 // the lifecycle sweep (dedup/reinforce/supersede) so they agree on identity.
 func TitleHashOf(title string) string {
 	sum := sha256.Sum256([]byte(normalizeTitle(title)))

@@ -42,8 +42,8 @@ func (c *Config) ensureMeter() {
 // transport error returns ("", 0, err); the caller treats any error as SKIP.
 type GateFunc func(prompt string) (out string, cost float64, err error)
 
-// GATE_PROMPT is the WHAT/HOW/BETTER rigid schema (ported from brain-autolesson
-// GATE_PROMPT, autolesson.py:111-126), RE-TEMPLATED from a git-diff to a chat
+// GATE_PROMPT is the WHAT/HOW/BETTER rigid schema (ported from the reference lesson-extractor
+// GATE_PROMPT), RE-TEMPLATED from a git-diff to a chat
 // exchange: the input is the user correction + the assistant answer (NOT a
 // diff). The three exact lines or exactly SKIP contract is preserved.
 const GATE_PROMPT = `You distill ONE reusable engineering lesson from a chat exchange, for a personal knowledge base.
@@ -75,9 +75,9 @@ func truncate(s string, n int) string {
 	return s[:n]
 }
 
-// runGate ports the run_gate parse (autolesson.py:140-146) EXACTLY: SKIP / empty
+// runGate ports the run_gate parse EXACTLY: SKIP / empty
 // / no "WHAT:" → no lesson; otherwise keep ONLY the line-anchored WHAT/HOW/BETTER
-// lines; empty keep → no lesson (Brain returns None, autolesson.py:146; closes
+// lines; empty keep → no lesson (reference engine returns None; closes
 // F-9 — a prose body merely Contains("WHAT:") yields keep==[] → no write).
 func runGate(out string) (lesson string, ok bool) {
 	out = strings.TrimSpace(out)
