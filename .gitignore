@@ -1,0 +1,25 @@
+# secrets
+.env
+.env.*
+*.key
+~/.bridge/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# node
+node_modules/
+
+# live-written
+*.log
+
+# go
+/oikos
+oikosd
+*.test
+*.out
+/dist/
+dist/

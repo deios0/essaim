@@ -1,0 +1,57 @@
+name: release
+
+# Publish a GitHub Release with the cross-compiled oikos binaries whenever a
+# version tag (vX.Y.Z) is pushed. The release assets are EXACTLY what
+# scripts/install.sh{,.ps1} fetch + checksum-verify on a clean box:
+#   oikos_<os>_<arch>[.exe]   for every supported platform
+#   SHA256SUMS                one file covering all of them
+#
+# Triggered ONLY by a v* tag push — never on a branch push or PR.
+on:
+  push:
+    tags:
+      - 'v*'
+
+# The release job creates a GitHub Release + uploads assets, which needs write
+# access to repository contents. Nothing else is granted.
+permissions:
+  contents: write
+
+env:
+  # Pin the toolchain: go.mod is `go 1.24`. Never let a transitive dep
+  # auto-upgrade the toolchain in CI (matches .github/workflows/ci.yml).
+  GOTOOLCHAIN: local
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+
+      # Build every os/arch asset + SHA256SUMS into ./dist, stamping the pushed
+      # tag as the version. This is the SAME script developers run locally, so a
+      # release asset is bit-for-bit reproducible off the tag.
+      - name: build release assets
+        run: VERSION="${GITHUB_REF_NAME}" scripts/build-release.sh
+
+      # Verify the SHA256SUMS the build wrote actually matches the assets before
+      # we publish them — a cheap fail-closed guard against a corrupt upload.
+      - name: verify checksums
+        run: cd dist && sha256sum -c SHA256SUMS
+
+      # Create the GitHub Release for this tag and upload every dist/ asset
+      # (the six binaries + SHA256SUMS). gh is preinstalled on ubuntu-latest.
+      - name: create release + upload assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            dist/oikos_* \
+            dist/SHA256SUMS

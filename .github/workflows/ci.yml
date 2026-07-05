@@ -1,0 +1,22 @@
+name: ci
+on: [push, pull_request]
+env:
+  # Pin the toolchain: go.mod is `go 1.24` (a supported release; 1.22 is EOL and
+  # ships known-fixed stdlib CVEs) and all deps build on 1.24; never let a
+  # transitive dep auto-upgrade the toolchain in CI.
+  GOTOOLCHAIN: local
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.24.x' }
+      - run: CGO_ENABLED=0 go build -trimpath -o oikos ./cmd/oikos
+      - run: go vet ./...
+      - name: gofmt
+        run: 'test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)'
+      - run: CGO_ENABLED=1 go test -race ./...
+      - run: go install github.com/google/go-licenses@latest && go-licenses check ./... --disallowed_types=forbidden,restricted
+      - name: no phone-home
+        run: '! grep -rEn "telemetry|auto.?update|analytics|posthog|sentry" --include=*.go .'
