@@ -34,16 +34,22 @@ func runBus(_ []string, out io.Writer) error {
 		fmt.Fprintln(out, "oikos: not joined to any bus. `oikos join --endpoint <url> --key-file <path>` to connect.")
 		return nil
 	}
-	zone := ep.Zone
-	if zone == "" {
-		zone = "(zone from key)"
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	evs, _, err := bus.New(ep).Poll(ctx, 1<<62) // huge cursor: connectivity check, no backlog
+	client := bus.New(ep)
+	evs, _, err := client.Poll(ctx, 1<<62) // huge cursor: connectivity check, no backlog
 	if err != nil {
-		return fmt.Errorf("oikos bus: joined %s (%s) but the bus is unreachable or the key was rejected: %w", ep.URL, zone, err)
+		return fmt.Errorf("oikos bus: joined %s but the bus is unreachable or the key was rejected: %w", ep.URL, err)
 	}
-	fmt.Fprintf(out, "oikos: joined %s, zone %s — connection live (%d recent event(s)).\n", ep.URL, zone, len(evs))
+	// Show the SERVER-ENFORCED zone (from an event the key may see), not the stored
+	// label — the label can never misrepresent the real zone.
+	zone, _ := client.Zone(ctx)
+	if zone == "" {
+		zone = ep.Zone // fall back to the stored nickname when the zone has no events yet
+	}
+	if zone == "" {
+		zone = "enforced by your key"
+	}
+	fmt.Fprintf(out, "oikos: joined %s, zone %s (server-enforced) — connection live (%d recent event(s)).\n", ep.URL, zone, len(evs))
 	return nil
 }

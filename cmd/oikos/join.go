@@ -20,7 +20,7 @@ import (
 // informational; the server derives and enforces the real zone from the key.
 //
 //	oikos join --endpoint https://bus.example.com/aibus/events \
-//	           --zone team --key-file ~/.config/oikos/keys/x.key
+//	           --zone team --key-file ~/.config/oikos/keys/aibus-clients/x.key
 //
 // AIBUS_URL / AIBUS_KEY env always override the stored values at use time (the
 // off-tailnet / wrong-zone escape hatch), so a join is a convenience default,
@@ -29,7 +29,7 @@ func runJoin(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("join", flag.ContinueOnError)
 	fs.SetOutput(out)
 	endpoint := fs.String("endpoint", "", "bus endpoint URL (or set AIBUS_URL)")
-	zone := fs.String("zone", "", "zone label (informational; the server enforces the real zone from the key)")
+	zoneFlag := fs.String("zone", "", "optional zone nickname (informational; the server enforces the real zone from the key)")
 	keyFile := fs.String("key-file", "", "path to the existing zone key file (the raw key is never stored in config)")
 	noVerify := fs.Bool("no-verify", false, "skip the live key check (offline/air-gapped join)")
 	if err := fs.Parse(args); err != nil {
@@ -46,6 +46,12 @@ func runJoin(args []string, out io.Writer) error {
 	// loaded from its file (or AIBUS_KEY env) only for the check; the raw key is
 	// never written to config — only the file path is. --no-verify opts out for an
 	// offline join.
+	//
+	// The stored zone is the SERVER-ENFORCED one (read off an event the key may
+	// see), NOT the user's --zone label — the label can never misrepresent the
+	// real zone the server derives from the key. --zone is only a fallback nickname
+	// used when the zone has no events yet to confirm it (or under --no-verify).
+	zone := strings.TrimSpace(*zoneFlag)
 	if !*noVerify {
 		key := strings.TrimSpace(os.Getenv("AIBUS_KEY"))
 		if key == "" && kf != "" {
@@ -57,8 +63,12 @@ func runJoin(args []string, out io.Writer) error {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		if err := bus.New(bus.Endpoint{URL: url, Key: key}).Verify(ctx); err != nil {
+		client := bus.New(bus.Endpoint{URL: url, Key: key})
+		if err := client.Verify(ctx); err != nil {
 			return err
+		}
+		if serverZone, err := client.Zone(ctx); err == nil && serverZone != "" {
+			zone = serverZone // server truth overrides the client-supplied label
 		}
 	}
 
@@ -66,15 +76,15 @@ func runJoin(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	cfg.Bus = &config.BusJoin{URL: url, Zone: strings.TrimSpace(*zone), KeyFile: kf}
+	cfg.Bus = &config.BusJoin{URL: url, Zone: zone, KeyFile: kf}
 	if err := config.Save(cfg); err != nil {
 		return err
 	}
 	z := cfg.Bus.Zone
 	if z == "" {
-		z = "(zone from key)"
+		z = "the zone your key enforces"
 	}
-	fmt.Fprintf(out, "oikos: joined %s as %s. `oikos leave` to disconnect.\n", url, z)
+	fmt.Fprintf(out, "oikos: joined %s (%s, server-enforced by your key). `oikos leave` to disconnect.\n", url, z)
 	return nil
 }
 
