@@ -33,6 +33,16 @@
 //	                         merge it deterministically (no rule lost). Optional,
 //	                         local, $0 — the M4 sync primitive the future paid
 //	                         Team-Rule-Sync drops into.
+//	oikos join --endpoint <url> --key-file <path> [--zone <z>] [--no-verify]
+//	                         OPT-IN: connect oikos to a bus. Live-validates the key
+//	                         against the endpoint, then persists the membership
+//	                         (endpoint + zone + key-FILE reference — never the raw
+//	                         key). The server derives+enforces the real zone from
+//	                         the key. AIBUS_URL/AIBUS_KEY env override the stored
+//	                         values at use time. Default-off: no join, no socket.
+//	oikos leave              disconnect from the bus; oikos is local-only again.
+//	oikos bus                show join status; when joined, do one live poll to
+//	                         confirm the connection reaches the bus in its zone.
 //
 // On first run (no config yet) `oikos serve` prints the one-screen setup URL
 // http://127.0.0.1:4141/setup, where a non-technical user picks a model (a
@@ -118,6 +128,21 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "join":
+		if err := runJoin(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "leave":
+		if err := runLeave(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	case "bus":
+		if err := runBus(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	default:
 		usage()
 		os.Exit(2)
@@ -125,7 +150,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: oikos <serve|emit|wire|unwire|init|sync|version>")
+	fmt.Fprintln(os.Stderr, "usage: oikos <serve|emit|wire|unwire|init|sync|join|leave|bus|version>")
 }
 
 // runInit implements `oikos init` — the forced first-run demo. It ensures a
