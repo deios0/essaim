@@ -403,7 +403,7 @@ func anyMatchAnchored(pats []*regexp.Regexp, text string) bool {
 }
 
 // Quality is the result of classifyQuality (port of reference engine classify_quality
-//).
+// ).
 type Quality struct {
 	Score    float64
 	Flags    []string

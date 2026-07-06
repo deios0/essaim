@@ -17,10 +17,10 @@ import (
 // ms/MB, capped ~100ms.
 func TestScaleDeadlineGrowsWithBodySize(t *testing.T) {
 	const base = 15 * time.Millisecond
-	small := scaleDeadline(base, 1024)          // ~1KB → base
-	oneMB := scaleDeadline(base, 1<<20)          // 1MB
-	tenMB := scaleDeadline(base, 10<<20)         // 10MB
-	huge := scaleDeadline(base, 1<<30)           // 1GB → capped
+	small := scaleDeadline(base, 1024)   // ~1KB → base
+	oneMB := scaleDeadline(base, 1<<20)  // 1MB
+	tenMB := scaleDeadline(base, 10<<20) // 10MB
+	huge := scaleDeadline(base, 1<<30)   // 1GB → capped
 
 	if small != base {
 		t.Fatalf("a small body must keep the base deadline, got %v", small)

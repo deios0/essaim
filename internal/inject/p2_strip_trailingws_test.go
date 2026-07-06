@@ -59,11 +59,11 @@ func TestStripNormalizationDoesNotOverMatch(t *testing.T) {
 		role, content string
 	}
 	cases := []tc{
-		{"system", begin + "\nbody no end trailing\n"},        // no END → not a block
-		{"system", "prefix junk " + inner},                    // real content before BEGIN → not byte-0
-		{"system", inner + " visible tail text"},              // non-whitespace after END → not a block
-		{"user", inner + "\n"},                                // user role → never stripped (role-first)
-		{"assistant", inner},                                  // assistant echo → never stripped
+		{"system", begin + "\nbody no end trailing\n"}, // no END → not a block
+		{"system", "prefix junk " + inner},             // real content before BEGIN → not byte-0
+		{"system", inner + " visible tail text"},       // non-whitespace after END → not a block
+		{"user", inner + "\n"},                         // user role → never stripped (role-first)
+		{"assistant", inner},                           // assistant echo → never stripped
 	}
 	for i, c := range cases {
 		body := []byte(`{"messages":[` +
