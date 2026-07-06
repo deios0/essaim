@@ -143,6 +143,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "brain":
+		if err := runBrain(os.Args[2:], os.Stdout); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	default:
 		usage()
 		os.Exit(2)
@@ -150,7 +155,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: oikos <serve|emit|wire|unwire|init|sync|join|leave|bus|version>")
+	fmt.Fprintln(os.Stderr, "usage: oikos <serve|emit|wire|unwire|init|sync|join|leave|bus|brain|version>")
 }
 
 // runInit implements `oikos init` — the forced first-run demo. It ensures a
