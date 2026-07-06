@@ -15,6 +15,7 @@ import (
 type Event struct {
 	ID      int64           `json:"id"`
 	Kind    string          `json:"kind"`
+	Zone    string          `json:"zone,omitempty"`
 	From    string          `json:"from,omitempty"`
 	Payload json.RawMessage `json:"payload,omitempty"`
 }
@@ -24,12 +25,17 @@ type Event struct {
 // to the caller's zone. A non-2xx (e.g. 403) surfaces as an error — a denied read
 // must never masquerade as an empty poll.
 func (c *Client) Poll(ctx context.Context, since int64) ([]Event, int64, error) {
+	return c.pollLimited(ctx, since, 200)
+}
+
+// pollLimited is Poll with an explicit page size.
+func (c *Client) pollLimited(ctx context.Context, since int64, limit int) ([]Event, int64, error) {
 	url := c.ep.URL
 	sep := "?"
 	if strings.Contains(url, "?") {
 		sep = "&"
 	}
-	url = url + sep + "since=" + strconv.FormatInt(since, 10) + "&limit=200"
+	url = url + sep + "since=" + strconv.FormatInt(since, 10) + "&limit=" + strconv.Itoa(limit)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, since, err
