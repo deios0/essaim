@@ -2,12 +2,12 @@
 
 # oikos
 
-**Your AI corrections, turned into rules that write themselves into every tool.**
+### Your AI stops repeating mistakes.
 
-oikos watches the corrections you give your AI, distills them into ranked, editable
-Markdown rules in your own vault, and **keeps your `AGENTS.md` (plus `CLAUDE.md` /
-`GEMINI.md`) written and current** from them. White, pure-Go, one static binary —
-nothing leaves your machine.
+**A local memory that learns the corrections you give your AI — and makes them stick
+across every tool.** Fix something once in Cursor, and Claude Code, Codex and Gemini
+stop making that same mistake too. You bring your own keys; oikos is a single white,
+pure-Go binary that's inert until you use it — nothing leaves your machine, ever.
 
 [![release](https://img.shields.io/github/v/release/deios0/oikos?color=0b7cc4&label=release)](https://github.com/deios0/oikos/releases)
 [![license](https://img.shields.io/badge/license-Apache--2.0-0b7cc4)](LICENSE)
@@ -23,19 +23,27 @@ curl -fsSL https://raw.githubusercontent.com/deios0/oikos/master/scripts/install
 
 ---
 
-`AGENTS.md` is now a [Linux-Foundation-stewarded standard](https://agents.md): drop
-one file in your repo and Cursor, Claude Code, Codex, Gemini and the rest read it.
-That's "one rule → all tools" — for free. **oikos doesn't compete with that. It rides it.**
+Every AI tool forgets. You correct Cursor — *"use PostgreSQL, not MySQL"* — and tomorrow
+Codex suggests MySQL again. The fix you already taught doesn't travel: not to the next
+tool, not to next week. Your preferences live in your head; the model starts from zero
+every session.
 
-The catch with a static `AGENTS.md` is simple: **a file doesn't learn.** You hand-write
-it, and it goes stale the moment your preferences change. oikos closes that loop — it
-captures the corrections you give your AI, distills them into editable Markdown rules in
-your own vault, ranks them, and **keeps your `AGENTS.md` written and current for you.**
-You teach a preference once; it stays live in every tool that reads the standard.
+**oikos is the memory layer that fixes this.** It captures the corrections you give your
+AI, distills each into an editable Markdown rule you own, ranks them, and feeds the
+relevant ones back into every tool — so a preference you teach once *stays taught*,
+everywhere. The leverage is the layer **above** the model — a correction ledger that's
+yours and portable — so it keeps paying off even as models plateau.
+
+It rides the open [`AGENTS.md` standard](https://agents.md) (one file → Cursor, Claude
+Code, Codex, Gemini all read it) and adds the one thing a static file can't do: **it
+learns.** Optionally, it can also sit live between your tools and the model, catching
+corrections the moment you make them. And when you're ready for a team, the same binary
+[connects to a shared server](#team-tier--connect-to-a-server-optional) so your whole
+team's corrections compound together.
 
 ---
 
-## What oikos actually does
+## How it works
 
 ```
 your AI corrections ──▶ oikos vault (editable .md rules, ranked) ──▶ AGENTS.md
@@ -43,25 +51,25 @@ your AI corrections ──▶ oikos vault (editable .md rules, ranked) ──▶
                                                                      GEMINI.md
 ```
 
-1. **Auto-writes your `AGENTS.md`.** `oikos emit` regenerates the ranked rule block into
-   your `AGENTS.md` (and `CLAUDE.md` / `GEMINI.md` mirrors) from your vault — on demand,
-   **with no proxy running.** Only your own content is touched: oikos owns exactly one
-   fenced region (`<!-- oikos:rules:begin … end -->`); everything you wrote by hand is
-   preserved byte-for-byte.
-2. **Keeps it current.** As you teach corrections, your rules change — re-run `oikos emit`
-   (or leave the optional proxy on for continuous updates) and the file reflects the latest
-   ranked set. A static file you maintain by hand can't do that.
-3. **Learns the corrections.** A correction becomes an editable `.md` rule in your vault:
-   - `T0` — explicit sigil: `/remember Always use PostgreSQL, never MySQL` → a rule, immediately.
+1. **Learns the corrections.** A correction becomes an editable `.md` rule in your own
+   vault — Markdown you can read, edit, and grep:
+   - `T0` — explicit: `/remember Always use PostgreSQL, never MySQL` → a rule, immediately.
    - `T1` — zero-token heuristic: a detected correction → a draft in `_inbox/` (quarantine).
    - `T2` — optional, opt-in, local-preferred LLM distillation (default **off**; never uploads
      your exchanges silently).
 
    Drafts are promoted only on independent reinforcement. **Credentials are never persisted.**
+2. **Enforces them across tools.** `oikos emit` writes the ranked, relevant rules into your
+   `AGENTS.md` (and `CLAUDE.md` / `GEMINI.md` mirrors) — on demand, **no proxy needed.** Only
+   your own content is touched: oikos owns exactly one fenced region
+   (`<!-- oikos:rules:begin … end -->`); everything you wrote by hand is preserved byte-for-byte.
+3. **Keeps it current.** Teach a new correction, re-run `oikos emit` (or leave the optional
+   live proxy on), and every tool reflects the latest ranked set. A static file you maintain
+   by hand can't do that.
 
-The leverage is the layer *above* the model — ranked, correction-learned rules that follow
-you across every tool that reads `AGENTS.md` — not the model itself, so it keeps working
-even as models plateau.
+The leverage is the layer *above* the model — a ranked, correction-learned rule ledger that's
+yours and follows you across every tool — not the model itself, so it keeps paying off even as
+models plateau.
 
 ---
 
