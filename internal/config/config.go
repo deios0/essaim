@@ -64,6 +64,9 @@ type Config struct {
 	// records WHERE to reach the bus and WHICH zone key file to present — never
 	// the raw key (the key stays in its file, e.g. ~/.bridge/keys/...).
 	Bus *BusJoin `json:"bus,omitempty"`
+	// Brain is the opt-in Brain (rule-store) join (nil = not joined). Same shape
+	// as Bus: WHERE + WHICH zone key file, never the raw key.
+	Brain *BrainJoin `json:"brain,omitempty"`
 }
 
 // BusJoin is a persisted opt-in bus membership. The zone is informational only —
@@ -75,10 +78,17 @@ type BusJoin struct {
 	KeyFile string `json:"key_file,omitempty"`
 }
 
+// BrainJoin is a persisted opt-in Brain membership (WHERE + WHICH zone key file).
+type BrainJoin struct {
+	URL     string `json:"url"`
+	Zone    string `json:"zone,omitempty"`
+	KeyFile string `json:"key_file,omitempty"`
+}
+
 // IsEmpty reports whether no setup has happened yet (first run). A binary that
 // has only ever been installed returns true.
 func (c Config) IsEmpty() bool {
-	return c.Provider == "" && c.VaultDir == "" && len(c.WiredTools) == 0 && c.Bus == nil
+	return c.Provider == "" && c.VaultDir == "" && len(c.WiredTools) == 0 && c.Bus == nil && c.Brain == nil
 }
 
 // identity is the key a WiredTool is deduplicated by. A native-file tool is keyed

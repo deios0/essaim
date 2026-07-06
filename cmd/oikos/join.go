@@ -15,12 +15,15 @@ import (
 
 // runJoin implements `oikos join`: OPT-IN, the only way oikos ever talks to a
 // bus. It persists the membership (endpoint + zone + key-file reference) — never
-// the raw key. For a trusted user the key-file is an existing zone key from
-// your key-mint step (e.g. ~/.config/oikos/keys/aibus-clients/<x>.key). The zone is
-// informational; the server derives and enforces the real zone from the key.
+// the raw key. For a trusted user the key-file is an existing zone key. The zone
+// is informational; the server derives and enforces the real zone from the key.
+// An optional --brain-endpoint/--brain-key-file also joins a zone rule store in
+// the same command.
 //
 //	oikos join --endpoint https://bus.example.com/aibus/events \
-//	           --zone team --key-file ~/.config/oikos/keys/aibus-clients/x.key
+//	           --key-file ~/.config/oikos/keys/zone.key \
+//	           [--brain-endpoint https://brain.example.com/api/brain-<zone> \
+//	            --brain-key-file ~/.config/oikos/keys/brain.key]
 //
 // AIBUS_URL / AIBUS_KEY env always override the stored values at use time (the
 // off-tailnet / wrong-zone escape hatch), so a join is a convenience default,
@@ -32,6 +35,8 @@ func runJoin(args []string, out io.Writer) error {
 	zoneFlag := fs.String("zone", "", "optional zone nickname (informational; the server enforces the real zone from the key)")
 	keyFile := fs.String("key-file", "", "path to the existing zone key file (the raw key is never stored in config)")
 	noVerify := fs.Bool("no-verify", false, "skip the live key check (offline/air-gapped join)")
+	brainEndpoint := fs.String("brain-endpoint", "", "optional Brain (rule-store) URL — also join a zone rule store")
+	brainKeyFile := fs.String("brain-key-file", "", "path to the Brain zone key file (raw key never stored)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -77,6 +82,14 @@ func runJoin(args []string, out io.Writer) error {
 		return err
 	}
 	cfg.Bus = &config.BusJoin{URL: url, Zone: zone, KeyFile: kf}
+
+	// Optional Brain (rule-store) join in the same command. Stored the same way —
+	// key-file reference only, zone informational (server enforces from the key).
+	brainURL := strings.TrimSpace(*brainEndpoint)
+	if brainURL != "" {
+		cfg.Brain = &config.BrainJoin{URL: brainURL, Zone: zone, KeyFile: strings.TrimSpace(*brainKeyFile)}
+	}
+
 	if err := config.Save(cfg); err != nil {
 		return err
 	}
@@ -85,6 +98,9 @@ func runJoin(args []string, out io.Writer) error {
 		z = "the zone your key enforces"
 	}
 	fmt.Fprintf(out, "oikos: joined %s (%s, server-enforced by your key). `oikos leave` to disconnect.\n", url, z)
+	if brainURL != "" {
+		fmt.Fprintf(out, "oikos: also joined Brain %s — run `oikos brain pull` then `oikos emit` to include your zone's rules.\n", brainURL)
+	}
 	return nil
 }
 
@@ -95,11 +111,12 @@ func runLeave(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Bus == nil {
+	if cfg.Bus == nil && cfg.Brain == nil {
 		fmt.Fprintln(out, "oikos: not joined to any bus.")
 		return nil
 	}
 	cfg.Bus = nil
+	cfg.Brain = nil
 	if err := config.Save(cfg); err != nil {
 		return err
 	}
