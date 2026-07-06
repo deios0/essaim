@@ -16,7 +16,7 @@
 #   1. temp vault with ONE rule whose body is EXACTLY "Always use PostgreSQL,
 #      never MySQL." — deliberately NO occurrence of the word "database".
 #   2. fake echo-upstream that prints the request body it received.
-#   3. oikosd serve at the DEFAULT match floor (0.60 — NOT lowered) so this is a
+#   3. essaimd serve at the DEFAULT match floor (0.60 — NOT lowered) so this is a
 #      real floor-clearing semantic match, not a floor-disabled pass-through.
 #   4. (A) send "what database should I use for my app?" → the rule IS injected
 #      (semantic: database ↔ PostgreSQL) even with no shared word.
@@ -38,10 +38,10 @@ cd "$REPO_ROOT"
 
 WORK="$(mktemp -d)"
 UPSTREAM_PORT=18097
-OIKOS_ADDR="127.0.0.1:4141"
+ESSAIM_ADDR="127.0.0.1:4141"
 
 cleanup() {
-  [[ -n "${OIKOS_PID:-}" ]] && kill "$OIKOS_PID" 2>/dev/null || true
+  [[ -n "${ESSAIM_PID:-}" ]] && kill "$ESSAIM_PID" 2>/dev/null || true
   [[ -n "${UP_PID:-}" ]] && kill "$UP_PID" 2>/dev/null || true
   rm -rf "$WORK"
 }
@@ -98,24 +98,24 @@ UP_PID=$!
 echo "    fake upstream pid=$UP_PID on 127.0.0.1:$UPSTREAM_PORT"
 echo
 
-echo "==> [3/5] oikosd at the DEFAULT floor (0.60 — a REAL semantic clearance)"
-go build -o "$WORK/oikosd" ./cmd/oikos
-OIKOS_VAULT="$VAULT" \
-OIKOS_UPSTREAM_BASE="http://127.0.0.1:$UPSTREAM_PORT" \
-  "$WORK/oikosd" serve > "$WORK/oikosd.log" 2>&1 &
-OIKOS_PID=$!
+echo "==> [3/5] essaimd at the DEFAULT floor (0.60 — a REAL semantic clearance)"
+go build -o "$WORK/essaimd" ./cmd/essaim
+ESSAIM_VAULT="$VAULT" \
+ESSAIM_UPSTREAM_BASE="http://127.0.0.1:$UPSTREAM_PORT" \
+  "$WORK/essaimd" serve > "$WORK/essaimd.log" 2>&1 &
+ESSAIM_PID=$!
 for _ in $(seq 1 50); do
-  if curl -fsS "http://$OIKOS_ADDR/health" >/dev/null 2>&1; then break; fi
+  if curl -fsS "http://$ESSAIM_ADDR/health" >/dev/null 2>&1; then break; fi
   sleep 0.1
 done
-echo "    /health: $(curl -fsS "http://$OIKOS_ADDR/health")"
+echo "    /health: $(curl -fsS "http://$ESSAIM_ADDR/health")"
 echo
 
 echo "==> [4/5] (A) SEMANTIC match — query 'database', rule says 'PostgreSQL'"
 SEM='{"model":"gpt-4o","messages":[{"role":"user","content":"what database should I use for my app?"}]}'
 echo "    client sent: $SEM"
 BEFORE_N="$(grep -ac '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" || true)"
-curl -fsS "http://$OIKOS_ADDR/v1/chat/completions" -H 'Content-Type: application/json' -d "$SEM" >/dev/null
+curl -fsS "http://$ESSAIM_ADDR/v1/chat/completions" -H 'Content-Type: application/json' -d "$SEM" >/dev/null
 for _ in $(seq 1 50); do
   NOW_N="$(grep -ac '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" || true)"
   if [[ "${NOW_N:-0}" -gt "${BEFORE_N:-0}" ]]; then break; fi
@@ -123,13 +123,13 @@ for _ in $(seq 1 50); do
 done
 FWD_SEM="$(grep -a '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" | tail -1 | sed 's/^FORWARDED_REQUEST_BODY://')"
 echo "    upstream received:"; echo "----"; echo "$FWD_SEM" | pp; echo "----"
-if echo "$FWD_SEM" | grep -q '<!-- oikos:rules:begin v=1 -->' && \
+if echo "$FWD_SEM" | grep -q '<!-- essaim:rules:begin v=1 -->' && \
    echo "$FWD_SEM" | grep -q 'Always use PostgreSQL, never MySQL.'; then
   echo "RESULT (A): PASS — the rule fired for a query with NO shared word"
   echo "            (semantic: database ↔ PostgreSQL), at the default 0.60 floor."
 else
   echo "RESULT (A): FAIL — the semantic rule was NOT injected."
-  echo "  oikosd.log:"; sed 's/^/    /' "$WORK/oikosd.log"
+  echo "  essaimd.log:"; sed 's/^/    /' "$WORK/essaimd.log"
   exit 1
 fi
 echo
@@ -138,7 +138,7 @@ echo "==> [5/5] (B) IRRELEVANT — query 'weather' must STILL inject NOTHING"
 IRR='{"model":"gpt-4o","messages":[{"role":"user","content":"what is the weather today?"}]}'
 echo "    client sent: $IRR"
 BEFORE_N="$(grep -ac '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" || true)"
-curl -fsS "http://$OIKOS_ADDR/v1/chat/completions" -H 'Content-Type: application/json' -d "$IRR" >/dev/null
+curl -fsS "http://$ESSAIM_ADDR/v1/chat/completions" -H 'Content-Type: application/json' -d "$IRR" >/dev/null
 for _ in $(seq 1 50); do
   NOW_N="$(grep -ac '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" || true)"
   if [[ "${NOW_N:-0}" -gt "${BEFORE_N:-0}" ]]; then break; fi
@@ -146,8 +146,8 @@ for _ in $(seq 1 50); do
 done
 FWD_IRR="$(grep -a '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" | tail -1 | sed 's/^FORWARDED_REQUEST_BODY://')"
 echo "    upstream received:"; echo "----"; echo "$FWD_IRR" | pp; echo "----"
-if echo "$FWD_IRR" | grep -q '<!-- oikos:rules:begin'; then
-  echo "RESULT (B): FAIL — weather query got an oikos block (semantic over-fired)."
+if echo "$FWD_IRR" | grep -q '<!-- essaim:rules:begin'; then
+  echo "RESULT (B): FAIL — weather query got an essaim block (semantic over-fired)."
   exit 1
 elif [[ "$FWD_IRR" == "$IRR" ]]; then
   echo "RESULT (B): PASS — weather forwarded VERBATIM, ZERO injection."

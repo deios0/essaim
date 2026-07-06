@@ -13,16 +13,16 @@ import (
 // rules at all) are HONEST misses — degraded=false (spec §5.5). They are distinct
 // so /health can report rules_indexed:0 vs an honest no-match.
 var (
-	ErrNoMatch    = errors.New("oikos: no rule cleared the similarity floor")
-	ErrIndexEmpty = errors.New("oikos: rule index is empty")
+	ErrNoMatch    = errors.New("essaim: no rule cleared the similarity floor")
+	ErrIndexEmpty = errors.New("essaim: rule index is empty")
 )
 
 // GuardConfig holds the tunable bloat-guard knobs (spec §5.3). Zero values fall
 // back to the spec defaults via withDefaults.
 type GuardConfig struct {
-	TopK       int     // OIKOS_TOP_K (default 10, cap 50)
-	MatchFloor float64 // OIKOS_MATCH_FLOOR (default 0.60)
-	EagerBytes int     // OIKOS_EAGER_BYTES (default 4096)
+	TopK       int     // ESSAIM_TOP_K (default 10, cap 50)
+	MatchFloor float64 // ESSAIM_MATCH_FLOOR (default 0.60)
+	EagerBytes int     // ESSAIM_EAGER_BYTES (default 4096)
 	CWD        string  // current project dir, for scope partition
 }
 
@@ -50,27 +50,27 @@ func (c GuardConfig) withDefaults() GuardConfig {
 }
 
 // GuardConfigFromEnv reads the bloat-guard knobs from the environment
-// (OIKOS_TOP_K, OIKOS_MATCH_FLOOR, OIKOS_EAGER_BYTES, OIKOS_CWD). Unset/invalid
+// (ESSAIM_TOP_K, ESSAIM_MATCH_FLOOR, ESSAIM_EAGER_BYTES, ESSAIM_CWD). Unset/invalid
 // values fall back to the spec defaults. CWD defaults to the process working
-// directory when OIKOS_CWD is unset.
+// directory when ESSAIM_CWD is unset.
 func GuardConfigFromEnv() GuardConfig {
 	cfg := GuardConfig{}
-	if v := os.Getenv("OIKOS_TOP_K"); v != "" {
+	if v := os.Getenv("ESSAIM_TOP_K"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.TopK = n
 		}
 	}
-	if v := os.Getenv("OIKOS_MATCH_FLOOR"); v != "" {
+	if v := os.Getenv("ESSAIM_MATCH_FLOOR"); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.MatchFloor = f
 		}
 	}
-	if v := os.Getenv("OIKOS_EAGER_BYTES"); v != "" {
+	if v := os.Getenv("ESSAIM_EAGER_BYTES"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.EagerBytes = n
 		}
 	}
-	if v := os.Getenv("OIKOS_CWD"); v != "" {
+	if v := os.Getenv("ESSAIM_CWD"); v != "" {
 		cfg.CWD = v
 	} else if wd, err := os.Getwd(); err == nil {
 		cfg.CWD = wd
@@ -99,13 +99,13 @@ func (ix *Index) MatchAndGuard(query string, cfg GuardConfig) (GuardResult, erro
 	return BloatGuard(cands, cfg)
 }
 
-// wrapperReserve is the byte overhead the wrapper sentinels add (OIKOS_BEGIN +
-// "\n" + ... + "\n" + OIKOS_END). It is reserved against EagerBytes so the final
+// wrapperReserve is the byte overhead the wrapper sentinels add (ESSAIM_BEGIN +
+// "\n" + ... + "\n" + ESSAIM_END). It is reserved against EagerBytes so the final
 // wrapped block fits the cap (spec §2.1, §5.3.e). Defined in render.go alongside
 // the sentinels; declared here as the value used by the byte-cap.
 //
 // We compute it from the sentinel constants to keep them in one place.
-var wrapperReserve = len(OIKOS_BEGIN) + len("\n") + len("\n") + len(OIKOS_END)
+var wrapperReserve = len(ESSAIM_BEGIN) + len("\n") + len("\n") + len(ESSAIM_END)
 
 // perRuleTagOverhead approximates the non-body bytes a rendered rule line costs
 // (the "- [H] Title: " prefix + newline). Spec §5.3.e uses ~64B/rule.
@@ -115,7 +115,7 @@ const perRuleTagOverhead = 64
 // truncated to fit the eager byte-cap (P2-4). It is a VISIBLE flag (never a
 // silent cut) so a reader — human or model — sees the rule body was clipped, and
 // so the injected block stays honest about what was omitted.
-const truncationMarker = " …[oikos: truncated]"
+const truncationMarker = " …[essaim: truncated]"
 
 // BloatGuard applies the ordered bloat-guard pipeline (spec §5.3) to a scored
 // candidate set:

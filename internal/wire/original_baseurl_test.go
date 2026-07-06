@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-// Deferred-6: `oikos unwire` of a base_url tool must restore the user's ORIGINAL
+// Deferred-6: `essaim unwire` of a base_url tool must restore the user's ORIGINAL
 // upstream (their real provider), not a hardcoded OpenAI default. The original is
 // captured at WIRE time from the tool's IDE config, stored on the wired-tool
 // record, and restored verbatim on unwire.
 
 // captureOriginalBaseURL reads the user's real upstream out of an IDE config,
-// verbatim, before oikos ever heals it.
+// verbatim, before essaim ever heals it.
 func TestCaptureOriginalBaseURLReadsUserUpstream(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.json")
@@ -25,7 +25,7 @@ func TestCaptureOriginalBaseURLReadsUserUpstream(t *testing.T) {
 	}
 }
 
-// When the config already holds only oikos's OWN proxy URL (oikos healed it
+// When the config already holds only essaim's OWN proxy URL (essaim healed it
 // already), there is no pristine original to capture — capture returns "".
 func TestCaptureOriginalBaseURLIgnoresProxyValue(t *testing.T) {
 	dir := t.TempDir()
@@ -33,7 +33,7 @@ func TestCaptureOriginalBaseURLIgnoresProxyValue(t *testing.T) {
 	writeFile(t, cfg, `{"apiBase":"`+proxyV1URL+`"}`)
 
 	if got := captureOriginalBaseURL(cfg); got != "" {
-		t.Fatalf("capture must return \"\" when only the oikos proxy is present, got %q", got)
+		t.Fatalf("capture must return \"\" when only the essaim proxy is present, got %q", got)
 	}
 }
 
@@ -47,7 +47,7 @@ func TestCaptureOriginalBaseURLMissingIsEmpty(t *testing.T) {
 	}
 }
 
-// The full round-trip: an IDE config pointing at the user's own gateway → oikos
+// The full round-trip: an IDE config pointing at the user's own gateway → essaim
 // heals it to the proxy → unwire (restoreBaseURLConfigTo with the captured
 // original) must restore the user's EXACT gateway, not the OpenAI default.
 func TestCaptureThenRestoreRoundTripsOriginal(t *testing.T) {
@@ -62,7 +62,7 @@ func TestCaptureThenRestoreRoundTripsOriginal(t *testing.T) {
 		t.Fatalf("capture failed: got %q, want %q", original, userGateway)
 	}
 
-	// 2. Simulate the heal watcher rewriting the config to the oikos proxy URL.
+	// 2. Simulate the heal watcher rewriting the config to the essaim proxy URL.
 	writeFile(t, cfg, `{"apiBase":"`+proxyV1URL+`","theme":"dark"}`)
 
 	// 3. Unwire restores to the captured original.
@@ -73,7 +73,7 @@ func TestCaptureThenRestoreRoundTripsOriginal(t *testing.T) {
 	if !st.Changed {
 		t.Fatal("restore must report a change (the proxy URL was present)")
 	}
-	// A restore to a KNOWN original needs no manual hint — oikos is confident.
+	// A restore to a KNOWN original needs no manual hint — essaim is confident.
 	if st.NeedsManualHint {
 		t.Fatal("restoring a captured original must not flag a manual hint")
 	}
@@ -83,7 +83,7 @@ func TestCaptureThenRestoreRoundTripsOriginal(t *testing.T) {
 		t.Fatalf("unwire must restore the user's ORIGINAL gateway, got:\n%s", got)
 	}
 	if strings.Contains(got, "127.0.0.1:4141") {
-		t.Fatalf("the oikos proxy URL must be gone after unwire:\n%s", got)
+		t.Fatalf("the essaim proxy URL must be gone after unwire:\n%s", got)
 	}
 	if strings.Contains(got, "api.openai.com") {
 		t.Fatalf("unwire must NOT restore to the OpenAI default when the real upstream is known:\n%s", got)

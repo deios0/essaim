@@ -63,7 +63,7 @@ func TestSetupRejectsRebindHost(t *testing.T) {
 // is allowed through the guard.
 func TestSetupAllowsSameOrigin(t *testing.T) {
 	s := csrfServer(t)
-	req := loopbackReq("POST", "/setup/vault", `{"vault_dir":"/tmp/oikos-vault"}`)
+	req := loopbackReq("POST", "/setup/vault", `{"vault_dir":"/tmp/essaim-vault"}`)
 	req.Host = "127.0.0.1:4141"
 	req.Header.Set("Origin", "http://127.0.0.1:4141")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
@@ -72,7 +72,7 @@ func TestSetupAllowsSameOrigin(t *testing.T) {
 	}
 }
 
-// A non-browser client (oikos CLI / curl: no Origin, no Sec-Fetch, loopback Host)
+// A non-browser client (essaim CLI / curl: no Origin, no Sec-Fetch, loopback Host)
 // is allowed — the guard targets browsers, not local tooling.
 func TestSetupAllowsNonBrowserClient(t *testing.T) {
 	s := csrfServer(t)

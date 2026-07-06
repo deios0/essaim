@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -233,7 +233,7 @@ func sanitizeFileStem(key string) string {
 // sees a partial file. The parent dir must already exist.
 func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".oikos-sync-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".essaim-sync-*.tmp")
 	if err != nil {
 		return err
 	}

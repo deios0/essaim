@@ -37,7 +37,7 @@ func (s *Server) modelsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	outReq, err := http.NewRequestWithContext(r.Context(), http.MethodGet, base+"/v1/models", nil)
 	if err != nil {
-		writeOpenAIError(w, http.StatusBadGateway, "oikos: could not build upstream request: "+err.Error())
+		writeOpenAIError(w, http.StatusBadGateway, "essaim: could not build upstream request: "+err.Error())
 		return
 	}
 	if up.APIKey != "" {

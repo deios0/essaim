@@ -10,24 +10,24 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/brain"
-	"oikos/internal/config"
+	"essaim/internal/brain"
+	"essaim/internal/config"
 )
 
-// runBrain implements `oikos brain <pull>`: pull the zone's shared rules from a
-// joined Brain into the vault's managed _brain/ mirror, so the next `oikos emit`
+// runBrain implements `essaim brain <pull>`: pull the zone's shared rules from a
+// joined Brain into the vault's managed _brain/ mirror, so the next `essaim emit`
 // writes them into your native files alongside your own rules. Network + opt-in;
-// the offline `oikos emit` stays network-free.
+// the offline `essaim emit` stays network-free.
 //
-//	oikos brain pull [--project <p>] [--vault <dir>]
+//	essaim brain pull [--project <p>] [--vault <dir>]
 func runBrain(args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] != "pull" {
-		return fmt.Errorf("usage: oikos brain pull [--project <p>] [--vault <dir>]")
+		return fmt.Errorf("usage: essaim brain pull [--project <p>] [--vault <dir>]")
 	}
 	fs := flag.NewFlagSet("brain pull", flag.ContinueOnError)
 	fs.SetOutput(out)
 	project := fs.String("project", "", "project tag to resolve rules for (default: the current directory name)")
-	vaultFlag := fs.String("vault", "", "vault directory to mirror into (default: OIKOS_VAULT / configured vault)")
+	vaultFlag := fs.String("vault", "", "vault directory to mirror into (default: ESSAIM_VAULT / configured vault)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -52,24 +52,24 @@ func runBrain(args []string, out io.Writer) error {
 		}
 	}
 	if url == "" {
-		return fmt.Errorf("oikos brain: not joined to a Brain — run `oikos join --brain-endpoint <url> --brain-key-file <path>` (or set BRAIN_URL/BRAIN_KEY)")
+		return fmt.Errorf("essaim brain: not joined to a Brain — run `essaim join --brain-endpoint <url> --brain-key-file <path>` (or set BRAIN_URL/BRAIN_KEY)")
 	}
 
-	// Resolve the vault: flag, env, config, else ~/oikos-vault (same as emit).
+	// Resolve the vault: flag, env, config, else ~/essaim-vault (same as emit).
 	vault := strings.TrimSpace(*vaultFlag)
 	if vault == "" {
-		vault = strings.TrimSpace(os.Getenv("OIKOS_VAULT"))
+		vault = strings.TrimSpace(os.Getenv("ESSAIM_VAULT"))
 	}
 	if vault == "" {
 		vault = strings.TrimSpace(cfg.VaultDir)
 	}
 	if vault == "" {
 		if home, err := os.UserHomeDir(); err == nil {
-			vault = filepath.Join(home, "oikos-vault")
+			vault = filepath.Join(home, "essaim-vault")
 		}
 	}
 	if vault == "" {
-		return fmt.Errorf("oikos brain: no vault — pass --vault, set OIKOS_VAULT, or run `oikos init`")
+		return fmt.Errorf("essaim brain: no vault — pass --vault, set ESSAIM_VAULT, or run `essaim init`")
 	}
 
 	proj := strings.TrimSpace(*project)
@@ -92,6 +92,6 @@ func runBrain(args []string, out io.Writer) error {
 	if z == "" {
 		z = "your zone"
 	}
-	fmt.Fprintf(out, "oikos: pulled %d %s rule(s) into the vault mirror. Run `oikos emit` to write them into your files.\n", len(rs), z)
+	fmt.Fprintf(out, "essaim: pulled %d %s rule(s) into the vault mirror. Run `essaim emit` to write them into your files.\n", len(rs), z)
 	return nil
 }

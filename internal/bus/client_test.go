@@ -31,7 +31,7 @@ func TestPublishSendsKeyHeaderAndReturnsID(t *testing.T) {
 	defer srv.Close()
 
 	c := New(Endpoint{URL: srv.URL, Key: "secret-zone-key", Zone: "team"})
-	id, err := c.Publish(context.Background(), "oikos-test", "oikos.rule.shared", map[string]any{"msg": "hi"})
+	id, err := c.Publish(context.Background(), "essaim-test", "essaim.rule.shared", map[string]any{"msg": "hi"})
 	if err != nil {
 		t.Fatalf("Publish: %v", err)
 	}
@@ -41,7 +41,7 @@ func TestPublishSendsKeyHeaderAndReturnsID(t *testing.T) {
 	if gotKey != "secret-zone-key" {
 		t.Errorf("X-Aibus-Key = %q, want the endpoint key in the header", gotKey)
 	}
-	if gotKind != "oikos.rule.shared" || gotProject != "oikos-test" {
+	if gotKind != "essaim.rule.shared" || gotProject != "essaim-test" {
 		t.Errorf("body kind=%q project=%q, want the passed kind + project", gotKind, gotProject)
 	}
 }

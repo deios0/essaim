@@ -1,4 +1,4 @@
-// Package server implements the oikosd loopback HTTP proxy.
+// Package server implements the essaimd loopback HTTP proxy.
 //
 // The server binds 127.0.0.1:4141 and exposes:
 //
@@ -20,11 +20,11 @@ import (
 	"syscall"
 	"time"
 
-	"oikos/internal/secret"
-	"oikos/internal/upstream"
+	"essaim/internal/secret"
+	"essaim/internal/upstream"
 )
 
-// Server is the oikosd proxy. The zero value is not usable; construct with New.
+// Server is the essaimd proxy. The zero value is not usable; construct with New.
 type Server struct {
 	addr string
 	mux  *http.ServeMux
@@ -138,8 +138,8 @@ func New(addr string) *Server {
 func (s *Server) SetToken(token string) { s.token = token }
 
 // SetInjector wires the B1 injection layer. A nil injector leaves the proxy as a
-// pure verbatim pass-through (no vault, no rules). Used by cmd/oikos to enable
-// injection when OIKOS_VAULT is set, and by tests to inject a configured store.
+// pure verbatim pass-through (no vault, no rules). Used by cmd/essaim to enable
+// injection when ESSAIM_VAULT is set, and by tests to inject a configured store.
 func (s *Server) SetInjector(in *injector) { s.inj = in }
 
 // SetProvider sets the upstream provider used to resolve the BYOK target. It is
@@ -169,7 +169,7 @@ func (s *Server) SetKeyValidator(fn func(ctx context.Context, key string) error)
 
 // SetOnProviderUpdate registers a callback invoked after a successful
 // /setup/model POST so the running proxy re-resolves its provider/key live,
-// without a process restart (P0-3 hot-reload). cmd/oikos wires this to re-read
+// without a process restart (P0-3 hot-reload). cmd/essaim wires this to re-read
 // the credential store and call SetProvider.
 func (s *Server) SetOnProviderUpdate(fn func()) { s.onProviderUpdate = fn }
 
@@ -184,7 +184,7 @@ func (s *Server) SetFileEmitTools(tools map[string]bool) { s.fileEmitTools = too
 
 // SetUpstreamBase overrides the resolved upstream's base URL for ALL upstream
 // calls (chat, completions, models). Empty leaves the provider-resolved base in
-// place. This is how the demo (and any "point oikos at a specific OpenAI-
+// place. This is how the demo (and any "point essaim at a specific OpenAI-
 // compatible endpoint" use) targets a fixed upstream.
 func (s *Server) SetUpstreamBase(base string) { s.upstreamBaseOverride = base }
 
@@ -201,7 +201,7 @@ func (s *Server) Listen() (net.Listener, error) {
 	l, err := net.Listen("tcp", s.addr)
 	if err != nil {
 		if errors.Is(err, syscall.EADDRINUSE) {
-			return nil, errors.New("oikos: port " + s.addr + " is already in use — stop the other process or run with --auto-port")
+			return nil, errors.New("essaim: port " + s.addr + " is already in use — stop the other process or run with --auto-port")
 		}
 		return nil, err
 	}

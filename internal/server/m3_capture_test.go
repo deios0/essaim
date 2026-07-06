@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/capture"
-	"oikos/internal/rules"
-	"oikos/internal/upstream"
+	"essaim/internal/capture"
+	"essaim/internal/rules"
+	"essaim/internal/upstream"
 )
 
 // recordingSink collects enqueued captures for assertions.
@@ -173,9 +173,9 @@ func TestMatchedRuleIDsFromSnapshotNotPrompt(t *testing.T) {
 			t.Fatal("no captured message text may carry a rule id")
 		}
 	}
-	// The captured clean messages are the user's original (oikos-free).
+	// The captured clean messages are the user's original (essaim-free).
 	if len(c.OriginalMessages) != 1 || c.OriginalMessages[0].Content != "what database should I use?" {
-		t.Fatalf("captured messages must be the oikos-free originals: %+v", c.OriginalMessages)
+		t.Fatalf("captured messages must be the essaim-free originals: %+v", c.OriginalMessages)
 	}
 }
 
@@ -183,7 +183,7 @@ func TestMatchedRuleIDsFromSnapshotNotPrompt(t *testing.T) {
 func TestOverflowRetryTurnNotCaptured(t *testing.T) {
 	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		if strings.Contains(string(body), rules.OIKOS_BEGIN) {
+		if strings.Contains(string(body), rules.ESSAIM_BEGIN) {
 			w.WriteHeader(http.StatusRequestEntityTooLarge)
 			_, _ = io.WriteString(w, `{"error":"too large"}`)
 			return
@@ -262,7 +262,7 @@ func TestArbiterKeysOnToolIdentityNotBaseURL(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest("POST", "/v1/chat/completions",
 			strings.NewReader(`{"model":"gpt-4o","messages":[{"role":"user","content":"what database should I use?"}]}`))
-		req.Header.Set(oikosToolHeader, tool)
+		req.Header.Set(essaimToolHeader, tool)
 		req.Header.Set("X-Test-Tool", tool)
 		s.Handler().ServeHTTP(rec, req)
 		mu.Lock()
@@ -273,10 +273,10 @@ func TestArbiterKeysOnToolIdentityNotBaseURL(t *testing.T) {
 	cc := send("claude-code") // native-file wired → NOT proxy-injected
 	cursor := send("cursor")  // unwired → IS proxy-injected
 
-	if strings.Contains(string(cc), rules.OIKOS_BEGIN) {
+	if strings.Contains(string(cc), rules.ESSAIM_BEGIN) {
 		t.Fatalf("the native-file-wired tool must NOT be proxy-injected:\n%s", cc)
 	}
-	if !strings.Contains(string(cursor), rules.OIKOS_BEGIN) {
+	if !strings.Contains(string(cursor), rules.ESSAIM_BEGIN) {
 		t.Fatalf("the unwired tool MUST be proxy-injected:\n%s", cursor)
 	}
 }
@@ -296,7 +296,7 @@ func TestPerToolOneChannelNoDoubleInjection(t *testing.T) {
 	orig := `{"model":"gpt-4o","messages":[{"role":"user","content":"what database should I use?"}]}`
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(orig))
-	req.Header.Set(oikosToolHeader, "claude-code")
+	req.Header.Set(essaimToolHeader, "claude-code")
 	s.Handler().ServeHTTP(rec, req)
 
 	if string(got) != orig {

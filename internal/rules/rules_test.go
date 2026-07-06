@@ -154,7 +154,7 @@ func TestRenderBodyDeterministicAndWrap(t *testing.T) {
 		t.Fatalf("oneline must collapse whitespace: %q", b1)
 	}
 	w := WrapBlock(b1)
-	if !strings.HasPrefix(w, OIKOS_BEGIN+"\n") || !strings.HasSuffix(w, "\n"+OIKOS_END) {
+	if !strings.HasPrefix(w, ESSAIM_BEGIN+"\n") || !strings.HasSuffix(w, "\n"+ESSAIM_END) {
 		t.Fatalf("WrapBlock fences wrong: %q", w)
 	}
 }

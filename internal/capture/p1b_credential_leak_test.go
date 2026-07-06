@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/extract"
+	"essaim/internal/extract"
 )
 
 // P1-b [CREDENTIAL LEAK — TOP PRIORITY]: a "white" local binary must NEVER

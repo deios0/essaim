@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
-// `oikos join` live-validates the key against the endpoint BEFORE persisting:
+// `essaim join` live-validates the key against the endpoint BEFORE persisting:
 // a rejected key (401/403) must NOT be saved (never persist an unconfirmed
 // credential — mirrors the model-key validation).
 func TestRunJoinRejectsBadKeyNoPersist(t *testing.T) {
@@ -21,7 +21,7 @@ func TestRunJoinRejectsBadKeyNoPersist(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	kf := filepath.Join(dir, "z.key")
 	_ = os.WriteFile(kf, []byte("bad-key\n"), 0o600)
 
@@ -49,7 +49,7 @@ func TestRunJoinValidKeyPersists(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	kf := filepath.Join(dir, "z.key")
 	_ = os.WriteFile(kf, []byte("good-key\n"), 0o600)
 
@@ -66,7 +66,7 @@ func TestRunJoinValidKeyPersists(t *testing.T) {
 // --no-verify skips the live check (offline / air-gapped join); persists as-is.
 func TestRunJoinNoVerifySkipsValidation(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	var out bytes.Buffer
 	err := runJoin([]string{"--endpoint", "http://unreachable.invalid/aibus/events", "--no-verify"}, &out)
 	if err != nil {

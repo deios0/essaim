@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 func TestReproBodyWellFormedGap(t *testing.T) {
@@ -13,7 +13,7 @@ func TestReproBodyWellFormedGap(t *testing.T) {
 	ids := []string{"r1"}
 	// Brace-balanced but INVALID JSON: missing colon after "temperature".
 	// The messages array is locally valid, so the structural scanner is happy and
-	// oikos would splice into it — but the ENCLOSING object is malformed, so the
+	// essaim would splice into it — but the ENCLOSING object is malformed, so the
 	// spliced output is ALSO invalid JSON. Spec §5.1 / A-5.5 bind "any ambiguity ⇒
 	// forward the EXACT original bytes verbatim." (P1-3.)
 	bad := `{"messages":[{"role":"user","content":"hi"}],"temperature"0.5}`

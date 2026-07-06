@@ -1,6 +1,6 @@
-// Package brain is oikos's opt-in client for a zone-scoped rule store (a Brain
+// Package brain is essaim's opt-in client for a zone-scoped rule store (a Brain
 // server). It is OFF by default; a binary that never joins a Brain opens no
-// socket. When joined, oikos pulls the ZONE's shared rules (the server derives
+// socket. When joined, essaim pulls the ZONE's shared rules (the server derives
 // and enforces the zone from the key) and writes them into a dedicated fenced
 // block in the user's native rules files — kept separate from the user's own
 // correction-learned vault. For a trusted user the key is an existing zone Brain
@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-// Endpoint is where oikos reaches a Brain and with which key. Zone is
+// Endpoint is where essaim reaches a Brain and with which key. Zone is
 // informational only — the server enforces the real zone from the key.
 type Endpoint struct {
 	URL  string `json:"url,omitempty"`
@@ -25,7 +25,7 @@ type Endpoint struct {
 	Zone string `json:"zone,omitempty"`
 }
 
-// Rule is one zone rule (the fields oikos renders).
+// Rule is one zone rule (the fields essaim renders).
 type Rule struct {
 	ID    string `json:"id"`
 	Title string `json:"title,omitempty"`
@@ -64,13 +64,13 @@ func (c *Client) Pull(ctx context.Context, project string) ([]Rule, error) {
 	defer resp.Body.Close()
 	rb, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("oikos brain pull: %s: %s", resp.Status, strings.TrimSpace(string(rb)))
+		return nil, fmt.Errorf("essaim brain pull: %s: %s", resp.Status, strings.TrimSpace(string(rb)))
 	}
 	var out struct {
 		Rules []Rule `json:"rules"`
 	}
 	if err := json.Unmarshal(rb, &out); err != nil {
-		return nil, fmt.Errorf("oikos brain pull: bad response: %w", err)
+		return nil, fmt.Errorf("essaim brain pull: bad response: %w", err)
 	}
 	return out.Rules, nil
 }

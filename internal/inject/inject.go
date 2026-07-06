@@ -1,5 +1,5 @@
 // Package inject implements the B1 request-side injection mechanic: it splices
-// exactly one leading oikos rule block into an OpenAI `POST /v1/chat/completions`
+// exactly one leading essaim rule block into an OpenAI `POST /v1/chat/completions`
 // body, idempotently (strip-then-inject, never stacks), in the client's own
 // instruction role, while leaving every client message byte-identical.
 //
@@ -14,14 +14,14 @@ import (
 	"errors"
 	"strings"
 
+	"essaim/internal/rules"
 	"github.com/buger/jsonparser"
-	"oikos/internal/rules"
 )
 
 // Re-export the sentinels so callers in this package read them locally.
 const (
-	begin = rules.OIKOS_BEGIN
-	end   = rules.OIKOS_END
+	begin = rules.ESSAIM_BEGIN
+	end   = rules.ESSAIM_END
 )
 
 // instructionRoles is the SET of roles that count as a leading instruction
@@ -34,16 +34,16 @@ func isInstruction(role string) bool { return instructionRoles[role] }
 // ErrSkip signals that injection must be skipped entirely and the original bytes
 // forwarded verbatim (fail-open) — used when there are no messages to inject
 // into (no messages array / empty / degenerate input).
-var ErrSkip = errors.New("oikos: injection skipped (fail-open)")
+var ErrSkip = errors.New("essaim: injection skipped (fail-open)")
 
 // ErrInjectUnsupported signals that the resolved target (model or wired upstream)
 // would REJECT an extra leading instruction message — i.e. it would 400 on an
-// injected system/developer element (B1 v1.1 A-2.3). oikos SKIPS injection
+// injected system/developer element (B1 v1.1 A-2.3). essaim SKIPS injection
 // entirely: forward the VERBATIM original bytes (including any pre-existing stale
-// oikos block — strip is NOT run on the wire), enqueue NO capture. This is an
+// essaim block — strip is NOT run on the wire), enqueue NO capture. This is an
 // honest, policy-driven no-injection — degraded=FALSE (distinct from
 // ErrDeadline/ErrPanic). Never turn a working request into a 400.
-var ErrInjectUnsupported = errors.New("oikos: injection unsupported by target (skip, fail-open)")
+var ErrInjectUnsupported = errors.New("essaim: injection unsupported by target (skip, fail-open)")
 
 // message is a lightweight view of one chat message extracted from the raw body.
 // rawStart/rawEnd bound the message's original bytes in the request buffer so it
@@ -54,18 +54,18 @@ type message struct {
 	rawEnd   int // offset just past the message object's '}'
 	// content is the flattened text content (string content, or concatenation of
 	// text parts for multimodal). ok=false ⇒ not flattenable (e.g. pure image
-	// parts) ⇒ never recognized as an oikos block (fail-safe).
+	// parts) ⇒ never recognized as an essaim block (fail-safe).
 	content   string
 	contentOK bool
 }
 
 // Snapshot is the pre-injection capture struct (spec §4.1) plumbed to the
 // async learning loop in a LATER milestone (M3). M2 only POPULATES it; it does
-// NOT extract corrections. CleanMessages is the post-strip, oikos-free messages
+// NOT extract corrections. CleanMessages is the post-strip, essaim-free messages
 // array as raw JSON bytes (the array value, including brackets).
 type Snapshot struct {
 	// CleanMessagesJSON is the raw JSON of the messages array AFTER stripping any
-	// prior oikos block (oikos-free). Never the injected array, never raw bytes
+	// prior essaim block (essaim-free). Never the injected array, never raw bytes
 	// that may carry a prior block (spec R-5). nil when there were no messages.
 	CleanMessagesJSON []byte
 	// MatchedRuleIDs travels out-of-band (never in the messages array) so it can
@@ -104,7 +104,7 @@ func modelWantsDeveloper(model string) bool {
 	return false
 }
 
-// chooseInjectRole picks the oikos block's role (spec §2.2 + Bridge finding #2):
+// chooseInjectRole picks the essaim block's role (spec §2.2 + Bridge finding #2):
 //  1. the role of the FIRST instruction-role message, if any (inherit the
 //     client's leading instruction role);
 //  2. else, if the model is an o-series/GPT-5.x reasoning model, "developer";
@@ -127,8 +127,8 @@ func chooseInjectRole(msgs []message, model string) string {
 	return "system"
 }
 
-// isOikosBlock implements the 3-factor, byte-0-anchored, payload-AGNOSTIC
-// recognizer (spec §2.6 + Bridge finding #1): a message is an oikos block IFF
+// isEssaimBlock implements the 3-factor, byte-0-anchored, payload-AGNOSTIC
+// recognizer (spec §2.6 + Bridge finding #1): a message is an essaim block IFF
 //  1. role ∈ instructionRoles (never strip a user/assistant/tool message),
 //  2. flattened content STARTS WITH begin+"\n" (anchored, not "contains"),
 //  3. flattened content ENDS WITH "\n"+end (the message is ENTIRELY the block).
@@ -142,13 +142,13 @@ func chooseInjectRole(msgs []message, model string) string {
 // turn-over-turn. Trimming only OUTER whitespace still requires the sentinels to
 // bound the ENTIRE (trimmed) message — inner prose after END, a mid-text marker,
 // or a partial sentinel are all still rejected — so recognition is not widened to
-// any non-oikos content (role-first factor 1 still protects user/assistant echoes).
+// any non-essaim content (role-first factor 1 still protects user/assistant echoes).
 //
 // Recognition keys on the WRAPPER sentinels ONLY, never the enclosed rule bodies
 // or any hash — so a prior block whose payload changed (rules changed mid-convo)
 // is still stripped → exactly one block survives, never A+B (Bridge finding #1,
 // Tests 8/11b).
-func isOikosBlock(m message) bool {
+func isEssaimBlock(m message) bool {
 	if !isInstruction(m.role) {
 		return false
 	}
@@ -225,7 +225,7 @@ func LastUserMessage(body []byte) string {
 // itself; a multimodal parts array flattens to the concatenation of its
 // `type=="text"` parts' `text` fields. Anything else (or a non-text-only parts
 // array that can't produce a string starting with the sentinel) is reported as
-// not-flattenable (contentOK=false) so it is NEVER treated as an oikos block
+// not-flattenable (contentOK=false) so it is NEVER treated as an essaim block
 // (fail-safe: never strip a client message, spec §2.6).
 func flattenContent(msg []byte) (string, bool) {
 	v, typ, _, err := jsonparser.Get(msg, "content")

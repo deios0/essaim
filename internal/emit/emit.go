@@ -1,5 +1,5 @@
 // Package emit implements the M3 NativeFileEmitter (spec §5): it writes the SAME
-// ranked, LIVE-only oikos block the proxy injects into the user's own native
+// ranked, LIVE-only essaim block the proxy injects into the user's own native
 // instruction files (CLAUDE.md / AGENTS.md / GEMINI.md), fenced with the same
 // sentinels. It reaches tools the proxy can't front (and default-mode Claude
 // Code, covering the deferred /v1/messages) without a base_url repoint. It is
@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"oikos/internal/extract"
-	"oikos/internal/rules"
+	"essaim/internal/extract"
+	"essaim/internal/rules"
 )
 
 // DefaultDebounce coalesces a burst of index swaps into one write (B-8).
@@ -51,9 +51,9 @@ type Emitter struct {
 	// the debounce window (which flakes under -race CPU starvation). nil in prod.
 	onEmitDone func()
 
-	// liveTools, if set, reports the CURRENT set of wired-tool names (what oikos's
+	// liveTools, if set, reports the CURRENT set of wired-tool names (what essaim's
 	// config.json holds right now) so emit() can skip a target whose tool was
-	// removed by `oikos unwire` on a running daemon — making unwire take effect
+	// removed by `essaim unwire` on a running daemon — making unwire take effect
 	// in-process, with NO restart (RESPECTS-UNWIRE / P1). The tools slice is
 	// snapshotted once at boot; this predicate is the live overlay over it. It
 	// mirrors heal.Watcher.SetLiveTools exactly.
@@ -69,7 +69,7 @@ type Emitter struct {
 	// clean success — a StatusFailed write or a StatusRefused path — from the
 	// DAEMON paths (OnIndexSwap's immediate + debounced-timer branches), whose
 	// ([]TargetResult, error) were previously discarded so a wired tool's file
-	// could go permanently stale with zero signal (P1). `oikos serve` wires this to
+	// could go permanently stale with zero signal (P1). `essaim serve` wires this to
 	// stderr. nil ⇒ problems are not surfaced (prior behavior; the explicit
 	// EmitNow* callers still receive the full result slice as a return value).
 	// Guarded by mu.
@@ -99,9 +99,9 @@ func (e *Emitter) SetOnEmitDone(fn func()) {
 }
 
 // SetLiveTools registers the predicate emit() consults to learn the CURRENT set
-// of wired-tool names, so a tool removed by `oikos unwire` on a running daemon is
+// of wired-tool names, so a tool removed by `essaim unwire` on a running daemon is
 // no longer emitted to — no restart needed (RESPECTS-UNWIRE / P1). It mirrors
-// heal.Watcher.SetLiveTools: `oikos serve` wires wire.LiveWiredTools() into both.
+// heal.Watcher.SetLiveTools: `essaim serve` wires wire.LiveWiredTools() into both.
 // Without it every wired tool emits unconditionally (prior behavior). See the
 // liveTools field doc for the fail-toward-emitting contract on an undeterminable
 // live set. Normally set before the first emit; stored under mu so a concurrent
@@ -116,7 +116,7 @@ func (e *Emitter) SetLiveTools(f func() (map[string]bool, bool)) {
 // success (StatusFailed or StatusRefused) from the DAEMON emit paths (OnIndexSwap
 // — both the immediate and the debounced-timer branch), whose results were
 // previously discarded (P1). Without it a wired tool's native file could go
-// permanently stale with zero signal. `oikos serve` wires this to stderr.
+// permanently stale with zero signal. `essaim serve` wires this to stderr.
 // Mirrors heal.Watcher.SetOnError. Stored under mu so a concurrent set is safe.
 func (e *Emitter) SetOnEmitProblem(f func(TargetResult)) {
 	e.mu.Lock()
@@ -258,7 +258,7 @@ func (e *Emitter) EmitNow(ix *rules.Index) (string, error) {
 }
 
 // EmitNowWithResults is EmitNow plus the per-target outcomes, so a caller (the
-// `oikos emit` CLI) can report which targets were written, skipped, refused, or
+// `essaim emit` CLI) can report which targets were written, skipped, refused, or
 // failed instead of asserting "wrote N rules" for every target unconditionally.
 func (e *Emitter) EmitNowWithResults(ix *rules.Index) (string, []TargetResult, error) {
 	block, results, err := e.emit(ix)
@@ -300,7 +300,7 @@ func (e *Emitter) emit(ix *rules.Index) (string, []TargetResult, error) {
 		// emitter last wrote. The in-memory `last` cache is only a hint (it lets the
 		// long-lived daemon skip when it KNOWS it just wrote this block); it must NOT
 		// gate the skip, or the standalone CLI path — which builds a FRESH emitter each
-		// `oikos emit`, so `last` is always empty — would rewrite an unchanged file
+		// `essaim emit`, so `last` is always empty — would rewrite an unchanged file
 		// every run and dirty its mtime (waking watchers/IDEs). Consult the disk (P2-1).
 		if fencedRegionEquals(tool.NativeFile, block) {
 			e.mu.Lock()
@@ -383,7 +383,7 @@ func fencedRegionEquals(path, block string) bool {
 	return ok && cur == block
 }
 
-// extractFencedRegion returns the existing oikos-managed OIKOS_BEGIN…OIKOS_END
+// extractFencedRegion returns the existing essaim-managed ESSAIM_BEGIN…ESSAIM_END
 // region of s (inclusive of both sentinels) and whether one was found. Only a
 // line-anchored, solo-line pair is recognized (rules.ManagedRegion) so a
 // user-inline sentinel is never mistaken for the managed block (P0-2).
@@ -400,7 +400,7 @@ func extractFencedRegion(s string) (string, bool) {
 // its own mode (review follow-up #2) — only a fresh file uses this default.
 const defaultNativeFileMode os.FileMode = 0o644
 
-// writeRenameFencedWithBackup replaces ONLY the fenced OIKOS region of the file
+// writeRenameFencedWithBackup replaces ONLY the fenced ESSAIM region of the file
 // (never user content), atomically (write-temp-then-rename), after backing the
 // file up (restorable). If the file has no fenced region, the block is appended
 // (preceded by a blank line). A missing file is created with just the block. The
@@ -409,7 +409,7 @@ const defaultNativeFileMode os.FileMode = 0o644
 //
 // SYMLINK WRITE-THROUGH (P2-5): the standard CLAUDE.md -> AGENTS.md single-source
 // setup makes the native file a SYMLINK. Two paths must be kept DISTINCT:
-//   - the LOGICAL path (`path`): where the .oikos.bak lives and where wire/unwire
+//   - the LOGICAL path (`path`): where the .essaim.bak lives and where wire/unwire
 //     snapshot+restore. It is ALWAYS the caller's path and is never resolved for
 //     the backup (a real-path backup would be orphaned — unwire looks at `path`).
 //   - the WRITE TARGET (`writeTarget`): the file whose BYTES we replace. For a
@@ -438,15 +438,15 @@ func writeRenameFencedWithBackup(path, block string) error {
 	orig := string(raw)
 
 	// Back up the PRISTINE original ONCE — only when no backup exists yet. A later
-	// emit reads a file that ALREADY carries an oikos block; backing that up would
+	// emit reads a file that ALREADY carries an essaim block; backing that up would
 	// overwrite the user's clean original, so a restore would re-inject a stale
 	// block instead of cleaning. The first backup is the pristine snapshot.
 	//
-	// The backup ALWAYS lives at the LOGICAL path (`path`.oikos.bak), NOT the
+	// The backup ALWAYS lives at the LOGICAL path (`path`.essaim.bak), NOT the
 	// resolved real path — that is exactly where wire/unwire read it. `raw` already
 	// holds the target's content (ReadFile followed the link), so the backup is the
 	// correct pristine bytes regardless of the symlink.
-	bak := path + ".oikos.bak"
+	bak := path + ".essaim.bak"
 	if _, statErr := os.Stat(bak); errors.Is(statErr, os.ErrNotExist) {
 		// The backup is a snapshot of the original → keep the original's mode.
 		if err := atomicWrite(bak, raw, mode); err != nil {
@@ -511,7 +511,7 @@ func resolveWriteTarget(path string) (writeTarget string, mode os.FileMode, err 
 	}
 	// DANGLING symlink (points at a missing target): write the LOGICAL path as a
 	// normal file, replacing the broken link. Writing THROUGH to the readlink target
-	// instead would create a file with only the oikos block and no backup, and a
+	// instead would create a file with only the essaim block and no backup, and a
 	// later `unwire` (seeing no backup + a block-only file) would remove the LOGICAL
 	// path — deleting the symlink and orphaning the created target (codex review).
 	// The link was already broken, so replacing it loses nothing and keeps
@@ -519,7 +519,7 @@ func resolveWriteTarget(path string) (writeTarget string, mode os.FileMode, err 
 	return path, mode, nil
 }
 
-// replaceFencedRegion replaces the oikos-managed OIKOS_BEGIN…OIKOS_END region of
+// replaceFencedRegion replaces the essaim-managed ESSAIM_BEGIN…ESSAIM_END region of
 // s with block, leaving every other byte untouched. Only a line-anchored,
 // solo-line pair is replaced (rules.ManagedRegion), so a user's inline sentinel
 // is never spliced into the replacement.
@@ -539,7 +539,7 @@ func replaceFencedRegion(s, block string) string {
 // at the wrong mode at any point.
 func atomicWrite(path string, data []byte, mode os.FileMode) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".oikos-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".essaim-*.tmp")
 	if err != nil {
 		return err
 	}

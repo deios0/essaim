@@ -3,21 +3,21 @@ package capture
 import (
 	"strings"
 
-	"oikos/internal/extract"
-	"oikos/internal/rules"
+	"essaim/internal/extract"
+	"essaim/internal/rules"
 )
 
-// ContainsCompleteOikosBlock reports whether s contains a COMPLETE oikos block
+// ContainsCompleteEssaimBlock reports whether s contains a COMPLETE essaim block
 // (BOTH sentinels, BEGIN before END). The HARD INVARIANT (§4.1) rejects a
 // capture whose any persisted body or assistant text carries a complete block —
 // the B2 echo-poison defense. A lone/partial sentinel does NOT trip it (M2 A-6):
 // both sentinels, in order, are required.
-func ContainsCompleteOikosBlock(s string) bool {
-	bi := strings.Index(s, rules.OIKOS_BEGIN)
+func ContainsCompleteEssaimBlock(s string) bool {
+	bi := strings.Index(s, rules.ESSAIM_BEGIN)
 	if bi < 0 {
 		return false
 	}
-	ei := strings.Index(s[bi+len(rules.OIKOS_BEGIN):], rules.OIKOS_END)
+	ei := strings.Index(s[bi+len(rules.ESSAIM_BEGIN):], rules.ESSAIM_END)
 	return ei >= 0
 }
 
@@ -44,7 +44,7 @@ func (c *Capture) Redact() {
 
 // ViolatesHardInvariant reports whether the capture must be DROPPED (not
 // enqueued): any original message body OR the assistant text contains a complete
-// oikos block. Run AFTER Redact, BEFORE enqueue.
+// essaim block. Run AFTER Redact, BEFORE enqueue.
 func (c *Capture) ViolatesHardInvariant() bool {
 	// P1-b: a private-key-bearing exchange (flagged by Redact) is whole-message-
 	// dropped — never enqueued, never learned from.
@@ -52,11 +52,11 @@ func (c *Capture) ViolatesHardInvariant() bool {
 		return true
 	}
 	for _, m := range c.OriginalMessages {
-		if ContainsCompleteOikosBlock(m.Content) {
+		if ContainsCompleteEssaimBlock(m.Content) {
 			return true
 		}
 	}
-	return ContainsCompleteOikosBlock(c.AssistantText)
+	return ContainsCompleteEssaimBlock(c.AssistantText)
 }
 
 // ToExchange builds the extractor Exchange from a finished capture: the newest

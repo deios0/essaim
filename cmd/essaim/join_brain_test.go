@@ -6,14 +6,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
-// `oikos join` with --brain-endpoint/--brain-key-file also records the Brain join
+// `essaim join` with --brain-endpoint/--brain-key-file also records the Brain join
 // (one command sets up both bus and brain). --no-verify skips the live check.
 func TestRunJoinRecordsBrain(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	kf := filepath.Join(dir, "b.key")
 	_ = os.WriteFile(kf, []byte("bk\n"), 0o600)
 

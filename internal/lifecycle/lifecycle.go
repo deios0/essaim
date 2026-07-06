@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // Default sweep interval (laptops sleep → the timer re-arms on wake; no cron).

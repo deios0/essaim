@@ -84,7 +84,7 @@ func InjectableRules(rs []Rule) []Rule {
 // BY DESIGN (Denis 2026-06-24): identity (tier 1) is intentionally NOT immune —
 // it decays per M3-spec BR-A1.5-6, like any other non-guardrail rule. This
 // DIVERGES from the Hub guardrail/identity-immune convention (where identity is
-// treated as untouchable) BY DESIGN: oikos identity rules are learned/asserted
+// treated as untouchable) BY DESIGN: essaim identity rules are learned/asserted
 // and must be allowed to age out if never reinforced; only tier-2 guardrails get
 // the hard immunity. See docs/decisions/2026-06-24-identity-not-demotion-immune.md.
 // This is WONTFIX, not an oversight — do not "fix" tier 1 to be immune.

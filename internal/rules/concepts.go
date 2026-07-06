@@ -19,7 +19,7 @@ import "strings"
 // for the full ADR + the rejected alternatives):
 //
 //   - A full transformer (sentence-transformers / ONNX) would force CGO and an
-//     external model file — breaking oikos's locked CGO_ENABLED=0 single-static-
+//     external model file — breaking essaim's locked CGO_ENABLED=0 single-static-
 //     binary + zero-phone-home invariants. REJECTED.
 //   - A dense word-embedding mean-pool (GloVe subset, cosine of mean-pooled
 //     vectors) is a few MB and pure-Go, but mean-pool similarity makes

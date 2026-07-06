@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// Client is oikos's minimal aibus client for a joined endpoint. It publishes and
+// Client is essaim's minimal aibus client for a joined endpoint. It publishes and
 // (later) subscribes over the endpoint from the join, presenting the zone key in
 // the X-Aibus-Key header — the server derives and enforces the zone from that
-// key; oikos never asserts a zone.
+// key; essaim never asserts a zone.
 type Client struct {
 	ep   Endpoint
 	http *http.Client
@@ -52,13 +52,13 @@ func (c *Client) Publish(ctx context.Context, project, kind string, payload map[
 	defer resp.Body.Close()
 	rb, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return 0, fmt.Errorf("oikos bus publish: %s: %s", resp.Status, bytes.TrimSpace(rb))
+		return 0, fmt.Errorf("essaim bus publish: %s: %s", resp.Status, bytes.TrimSpace(rb))
 	}
 	var out struct {
 		ID int64 `json:"id"`
 	}
 	if err := json.Unmarshal(rb, &out); err != nil {
-		return 0, fmt.Errorf("oikos bus publish: bad response: %w", err)
+		return 0, fmt.Errorf("essaim bus publish: bad response: %w", err)
 	}
 	return out.ID, nil
 }

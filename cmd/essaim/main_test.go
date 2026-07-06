@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 func TestVersionString(t *testing.T) {
@@ -14,7 +14,7 @@ func TestVersionString(t *testing.T) {
 
 // P2-3: a native-file wired-tool path that CONTAINS a comma must survive the
 // config→emit-targets resolution intact. The pre-fix code round-tripped the tools
-// through the comma-delimited OIKOS_NATIVE_FILE_TOOLS env var, so a comma in a
+// through the comma-delimited ESSAIM_NATIVE_FILE_TOOLS env var, so a comma in a
 // path (a Windows dir, a quoted path) silently split into a bogus extra tool and
 // dropped the real one. Resolving directly off the config carries the comma path
 // through byte-exact.
@@ -30,7 +30,7 @@ func TestNativeFileToolsCommaInPathSurvives(t *testing.T) {
 	}
 
 	// No env override → resolve directly from config.
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	got := nativeFileToolsForServe(cfg)
 	if len(got) != 2 {
@@ -59,7 +59,7 @@ func TestCommaJoinEnvFormatIsLossy(t *testing.T) {
 	commaPath := `/home/u/My Projects, Drafts/CLAUDE.md`
 	// Simulate the OLD encoding: name=path joined by commas.
 	joined := "claude-code=" + commaPath + ",codex=/home/u/AGENTS.md"
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", joined)
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", joined)
 
 	parsed := nativeFileToolsFromEnv()
 	// The comma-join splits the single claude-code path into two fragments, so the

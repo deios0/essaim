@@ -49,7 +49,7 @@ func parseRule(name string, raw []byte) (Rule, error) {
 	//   - closing fence + INVALID → DROP (malformed frontmatter; recovering it as
 	//     body would strip a status:draft/rejected gate and let it enter injection).
 	// A leading `---` with NO closing fence is a markdown horizontal rule / genuine
-	// body (oikos-authored and synced rules ALWAYS carry a closing fence, so this
+	// body (essaim-authored and synced rules ALWAYS carry a closing fence, so this
 	// path is never one of them) → index as body-only so the note is not dropped.
 	if strings.HasPrefix(s, frontmatterDelim+"\n") {
 		rest := strings.TrimPrefix(s[len(frontmatterDelim):], "\n")
@@ -69,7 +69,7 @@ func parseRule(name string, raw []byte) (Rule, error) {
 		case !blockHasYAMLKey(rest):
 			// No closing fence AND no `key:` line → a genuine markdown horizontal rule
 			// / prose note that merely begins with `---`. Index it as body-only (P2 —
-			// don't drop it). oikos-authored and synced rules ALWAYS carry a closing
+			// don't drop it). essaim-authored and synced rules ALWAYS carry a closing
 			// fence, so this path is never one of them: no status can be lost.
 			r.Body = strings.TrimSpace(s)
 		default:
@@ -190,7 +190,7 @@ func walkDirs(dir string, fn func(string)) error {
 // index and bloat guard impose deterministic ordering downstream.
 //
 // If dir is empty or does not exist, LoadVault returns (nil, nil): no vault =
-// no rules = no injection, cleanly (spec: skip cleanly when OIKOS_VAULT unset).
+// no rules = no injection, cleanly (spec: skip cleanly when ESSAIM_VAULT unset).
 func LoadVault(dir string) ([]Rule, error) {
 	if dir == "" {
 		return nil, nil

@@ -2,7 +2,7 @@
 // future paid Team-Rule-Sync drops into. It is NOT the paid product. It defines
 // a stable rule-store record (the vault rule + a content-addressed id + a
 // logical clock + an updated-at), and a deterministic, no-rule-lost merge of two
-// divergent vaults. The git transport (oikos sync) and this merge leave a clean
+// divergent vaults. The git transport (essaim sync) and this merge leave a clean
 // seam where a real CRDT/Team-Sync layer plugs in later (see Merger/CRDT seam).
 //
 // Design invariants (docs/specs/2026-06-24-rule-sync-primitive.md):

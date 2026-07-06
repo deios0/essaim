@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // P0-1 — SILENT-GREEN key acceptance. The /setup/model POST that saves an
@@ -46,7 +46,7 @@ func fakeUpstream(t *testing.T, goodKey string) *httptest.Server {
 func setupTestServerAt(t *testing.T, upstreamBase string) (*Server, *fakeSecretStore) {
 	t.Helper()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	s := New("127.0.0.1:4141")
 	fs := &fakeSecretStore{m: map[string]string{}}
 	s.SetSecretStore(fs)
@@ -126,7 +126,7 @@ func TestSetupModelLocalSkipsKeyValidation(t *testing.T) {
 	t.Cleanup(bad.Close)
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	s := New("127.0.0.1:4141")
 	s.SetSecretStore(&fakeSecretStore{m: map[string]string{}})
 	s.SetUpstreamBase(bad.URL)
@@ -152,12 +152,12 @@ func TestSetupModelLocalSkipsKeyValidation(t *testing.T) {
 func TestSetupModelConfigSaveFailureRollsBackKey(t *testing.T) {
 	up := fakeUpstream(t, "sk-or-good")
 	dir := t.TempDir()
-	// Make config.Save fail: OIKOS_CONFIG's parent is a FILE, so MkdirAll errors.
+	// Make config.Save fail: ESSAIM_CONFIG's parent is a FILE, so MkdirAll errors.
 	blocker := filepath.Join(dir, "not-a-dir")
 	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
 		t.Fatalf("seed blocker: %v", err)
 	}
-	t.Setenv("OIKOS_CONFIG", filepath.Join(blocker, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(blocker, "config.json"))
 
 	s := New("127.0.0.1:4141")
 	fs := &fakeSecretStore{m: map[string]string{}}
@@ -186,7 +186,7 @@ func TestSetupModelConfigSaveFailureRestoresPriorKey(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
 		t.Fatalf("seed blocker: %v", err)
 	}
-	t.Setenv("OIKOS_CONFIG", filepath.Join(blocker, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(blocker, "config.json"))
 
 	s := New("127.0.0.1:4141")
 	fs := &fakeSecretStore{m: map[string]string{"openrouter-key": "sk-or-OLD-working"}}

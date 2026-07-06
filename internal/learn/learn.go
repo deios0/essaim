@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"oikos/internal/capture"
-	"oikos/internal/extract"
-	"oikos/internal/lifecycle"
+	"essaim/internal/capture"
+	"essaim/internal/extract"
+	"essaim/internal/lifecycle"
 )
 
 // QueueSize bounds the async capture queue. On a full queue, captures are
@@ -180,7 +180,7 @@ func (l *Learner) sweepLoop(stop <-chan struct{}) {
 // DraftsPending counts the `.md` files in the vault's _inbox/ (server
 // CaptureStats). Best-effort; a read error yields 0.
 func (l *Learner) DraftsPending() int {
-	inbox := filepath.Join(l.vault, extract.OIKOS_DRAFT_DIR)
+	inbox := filepath.Join(l.vault, extract.ESSAIM_DRAFT_DIR)
 	n := 0
 	_ = filepath.WalkDir(inbox, func(p string, d os.DirEntry, err error) error {
 		if err != nil {

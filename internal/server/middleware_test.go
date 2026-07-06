@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 // okUpstream stands up a fake upstream that returns 200 on /v1/models so that a

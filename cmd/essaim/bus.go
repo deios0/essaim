@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"oikos/internal/bus"
-	"oikos/internal/config"
+	"essaim/internal/bus"
+	"essaim/internal/config"
 )
 
-// runBus implements `oikos bus`: report join status and, when joined, do one live
+// runBus implements `essaim bus`: report join status and, when joined, do one live
 // poll to confirm the stored join actually reaches the bus in its zone. On a
 // not-joined binary it prints the status and opens NO socket (default-off is
 // observable). Env AIBUS_URL/AIBUS_KEY override the stored endpoint/key.
@@ -31,7 +31,7 @@ func runBus(_ []string, out io.Writer) error {
 	}
 	ep, ok := bus.Resolve(os.Getenv, stored)
 	if !ok {
-		fmt.Fprintln(out, "oikos: not joined to any bus. `oikos join --endpoint <url> --key-file <path>` to connect.")
+		fmt.Fprintln(out, "essaim: not joined to any bus. `essaim join --endpoint <url> --key-file <path>` to connect.")
 		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -39,7 +39,7 @@ func runBus(_ []string, out io.Writer) error {
 	client := bus.New(ep)
 	evs, _, err := client.Poll(ctx, 1<<62) // huge cursor: connectivity check, no backlog
 	if err != nil {
-		return fmt.Errorf("oikos bus: joined %s but the bus is unreachable or the key was rejected: %w", ep.URL, err)
+		return fmt.Errorf("essaim bus: joined %s but the bus is unreachable or the key was rejected: %w", ep.URL, err)
 	}
 	// Show the SERVER-ENFORCED zone (from an event the key may see), not the stored
 	// label — the label can never misrepresent the real zone.
@@ -50,6 +50,6 @@ func runBus(_ []string, out io.Writer) error {
 	if zone == "" {
 		zone = "enforced by your key"
 	}
-	fmt.Fprintf(out, "oikos: joined %s, zone %s (server-enforced) — connection live (%d recent event(s)).\n", ep.URL, zone, len(evs))
+	fmt.Fprintf(out, "essaim: joined %s, zone %s (server-enforced) — connection live (%d recent event(s)).\n", ep.URL, zone, len(evs))
 	return nil
 }

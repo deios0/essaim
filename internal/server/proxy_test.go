@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 // Fix #1 [BLOCKER]: the server-owned client must NOT inject Accept-Encoding: gzip

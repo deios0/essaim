@@ -1,27 +1,27 @@
 #!/usr/bin/env bash
 #
-# demo-injection.sh — LIVE proof that oikos injects a vault rule into a real
+# demo-injection.sh — LIVE proof that essaim injects a vault rule into a real
 # POST /v1/chat/completions request before it reaches the upstream.
 #
 # What it does:
 #   1. creates a temp vault with ONE Obsidian-style rule (.md + YAML frontmatter):
 #        title "Use Postgres", body "Always use PostgreSQL, never MySQL."
 #   2. starts a fake "upstream" that simply ECHOES the request body it received
-#      (so we can see exactly what oikos forwarded).
-#   3. starts `oikosd serve` pointed at the fake upstream + the temp vault.
+#      (so we can see exactly what essaim forwarded).
+#   3. starts `essaimd serve` pointed at the fake upstream + the temp vault.
 #   4. sends a real POST /v1/chat/completions with the user message
 #        "what database should I use?"
 #   5. PRINTS the forwarded request body the upstream received — showing the
-#      injected   <!-- oikos:rules:begin v=1 -->...Use PostgreSQL...<!-- oikos:rules:end -->
+#      injected   <!-- essaim:rules:begin v=1 -->...Use PostgreSQL...<!-- essaim:rules:end -->
 #      system message that the client never sent.
 #
-# It needs only: bash, curl, and the Go toolchain (to build oikosd + the fake
+# It needs only: bash, curl, and the Go toolchain (to build essaimd + the fake
 # upstream). No python, no nc, no external services. Pure-Go, CGO-free.
 #
 # Usage:  scripts/demo-injection.sh
 set -euo pipefail
 
-# --- Go toolchain (oikos pins 1.22; GOTOOLCHAIN=local keeps it pinned) --------
+# --- Go toolchain (essaim pins 1.22; GOTOOLCHAIN=local keeps it pinned) --------
 export GOROOT="${GOROOT:-$(go env GOROOT 2>/dev/null)}"
 export GOPATH="${GOPATH:-$HOME/go}"
 export PATH="$GOROOT/bin:$PATH"
@@ -32,10 +32,10 @@ cd "$REPO_ROOT"
 
 WORK="$(mktemp -d)"
 UPSTREAM_PORT=18099           # fake upstream
-OIKOS_ADDR="127.0.0.1:4141"   # oikosd's fixed loopback bind
+ESSAIM_ADDR="127.0.0.1:4141"   # essaimd's fixed loopback bind
 
 cleanup() {
-  [[ -n "${OIKOS_PID:-}" ]] && kill "$OIKOS_PID" 2>/dev/null || true
+  [[ -n "${ESSAIM_PID:-}" ]] && kill "$ESSAIM_PID" 2>/dev/null || true
   [[ -n "${UP_PID:-}" ]] && kill "$UP_PID" 2>/dev/null || true
   rm -rf "$WORK"
 }
@@ -91,27 +91,27 @@ UP_PID=$!
 echo "    fake upstream pid=$UP_PID on 127.0.0.1:$UPSTREAM_PORT"
 echo
 
-echo "==> [3/5] build + start oikosd pointed at the fake upstream + vault"
-go build -o "$WORK/oikosd" ./cmd/oikos
-OIKOS_VAULT="$VAULT" \
-OIKOS_UPSTREAM_BASE="http://127.0.0.1:$UPSTREAM_PORT" \
-OIKOS_MATCH_FLOOR=0.0 \
-  "$WORK/oikosd" serve > "$WORK/oikosd.log" 2>&1 &
-OIKOS_PID=$!
-echo "    oikosd pid=$OIKOS_PID on http://$OIKOS_ADDR"
+echo "==> [3/5] build + start essaimd pointed at the fake upstream + vault"
+go build -o "$WORK/essaimd" ./cmd/essaim
+ESSAIM_VAULT="$VAULT" \
+ESSAIM_UPSTREAM_BASE="http://127.0.0.1:$UPSTREAM_PORT" \
+ESSAIM_MATCH_FLOOR=0.0 \
+  "$WORK/essaimd" serve > "$WORK/essaimd.log" 2>&1 &
+ESSAIM_PID=$!
+echo "    essaimd pid=$ESSAIM_PID on http://$ESSAIM_ADDR"
 
-# Wait for oikosd to come up (poll /health).
+# Wait for essaimd to come up (poll /health).
 for _ in $(seq 1 50); do
-  if curl -fsS "http://$OIKOS_ADDR/health" >/dev/null 2>&1; then break; fi
+  if curl -fsS "http://$ESSAIM_ADDR/health" >/dev/null 2>&1; then break; fi
   sleep 0.1
 done
-echo "    /health: $(curl -fsS "http://$OIKOS_ADDR/health")"
+echo "    /health: $(curl -fsS "http://$ESSAIM_ADDR/health")"
 echo
 
 echo "==> [4/5] send a real POST /v1/chat/completions"
 REQUEST='{"model":"gpt-4o","messages":[{"role":"user","content":"what database should I use?"}]}'
 echo "    client sent: $REQUEST"
-curl -fsS "http://$OIKOS_ADDR/v1/chat/completions" \
+curl -fsS "http://$ESSAIM_ADDR/v1/chat/completions" \
   -H 'Content-Type: application/json' \
   -d "$REQUEST" > "$WORK/client_resp.json"
 echo
@@ -129,13 +129,13 @@ echo "------------------------------------------------------------------"
 echo
 
 # Verdict (relevant case).
-if echo "$FORWARDED" | grep -q '<!-- oikos:rules:begin v=1 -->' && \
+if echo "$FORWARDED" | grep -q '<!-- essaim:rules:begin v=1 -->' && \
    echo "$FORWARDED" | grep -q 'Always use the PostgreSQL database, never MySQL.'; then
-  echo "RESULT: PASS — oikos injected the 'Use Postgres' rule as a leading"
+  echo "RESULT: PASS — essaim injected the 'Use Postgres' rule as a leading"
   echo "        system message; the client never sent it. The upstream saw the rule."
 else
-  echo "RESULT: FAIL — no injected oikos block found in the forwarded request."
-  echo "        oikosd.log:"; sed 's/^/          /' "$WORK/oikosd.log"
+  echo "RESULT: FAIL — no injected essaim block found in the forwarded request."
+  echo "        essaimd.log:"; sed 's/^/          /' "$WORK/essaimd.log"
   exit 1
 fi
 echo
@@ -143,7 +143,7 @@ echo
 # ---------------------------------------------------------------------------
 # [6/6] F-A proof: an IRRELEVANT user message gets NO injection. The same vault
 # (one DB rule), a weather question → the similarity floor rejects it, so the
-# upstream sees the ORIGINAL request with ZERO oikos block. This proves the
+# upstream sees the ORIGINAL request with ZERO essaim block. This proves the
 # similarity floor is reachable (the M2 review F-A fix) — irrelevant rules are
 # NOT injected into ~every request.
 echo "==> [6/6] send an IRRELEVANT message — expect NO injection (F-A floor proof)"
@@ -153,7 +153,7 @@ echo "==> [6/6] send an IRRELEVANT message — expect NO injection (F-A floor pr
 BEFORE_N="$(grep -ac '^FORWARDED_REQUEST_BODY:' "$WORK/upstream.log" || true)"
 IRRELEVANT='{"model":"gpt-4o","messages":[{"role":"user","content":"what is the weather today?"}]}'
 echo "    client sent: $IRRELEVANT"
-curl -fsS "http://$OIKOS_ADDR/v1/chat/completions" \
+curl -fsS "http://$ESSAIM_ADDR/v1/chat/completions" \
   -H 'Content-Type: application/json' \
   -d "$IRRELEVANT" > "$WORK/client_resp2.json"
 echo
@@ -173,8 +173,8 @@ else
 fi
 echo "------------------------------------------------------------------"
 echo
-if echo "$FORWARDED2" | grep -q '<!-- oikos:rules:begin'; then
-  echo "RESULT: FAIL — an irrelevant message got an oikos block injected (floor unreachable)."
+if echo "$FORWARDED2" | grep -q '<!-- essaim:rules:begin'; then
+  echo "RESULT: FAIL — an irrelevant message got an essaim block injected (floor unreachable)."
   exit 1
 elif [[ "$FORWARDED2" == "$IRRELEVANT" ]]; then
   echo "RESULT: PASS — the irrelevant weather question was forwarded VERBATIM with"

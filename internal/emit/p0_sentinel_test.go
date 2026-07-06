@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // P0-2 [EMIT SILENT USER-CONTENT DELETION]: extractFencedRegion /
-// replaceFencedRegion used strings.Index to find the FIRST OIKOS_BEGIN anywhere
-// in the file and the FIRST OIKOS_END after it — unanchored and unpaired. A user
+// replaceFencedRegion used strings.Index to find the FIRST ESSAIM_BEGIN anywhere
+// in the file and the FIRST ESSAIM_END after it — unanchored and unpaired. A user
 // whose native file contains the begin sentinel INLINE in prose (documenting
-// oikos, a pasted example, a quoted marker) makes the region detector span from
+// essaim, a pasted example, a quoted marker) makes the region detector span from
 // that inline marker to the real block's END, silently deleting every byte of
 // user content in between on the next emit.
 //
@@ -30,7 +30,7 @@ func TestP0EmitInlineSentinelNoDataLoss(t *testing.T) {
 	path := filepath.Join(dir, "CLAUDE.md")
 
 	userTop := "# My project rules\n\n" +
-		"We document the marker `" + rules.OIKOS_BEGIN + "` inline as an example here.\n\n" +
+		"We document the marker `" + rules.ESSAIM_BEGIN + "` inline as an example here.\n\n" +
 		"IMPORTANT user paragraph that must never be deleted.\n"
 	// Simulate a first emit that appended a real managed block after the user text.
 	block1 := writeBlock("- rule one")
@@ -61,7 +61,7 @@ func TestP0EmitInlineSentinelNoDataLoss(t *testing.T) {
 	// (the inline one is defanged in the block body but the user's prose copy is
 	// left byte-exact). The managed region must be the appended one, not the
 	// inline user marker.
-	if n := strings.Count(s, "\n"+rules.OIKOS_END); n != 1 {
+	if n := strings.Count(s, "\n"+rules.ESSAIM_END); n != 1 {
 		t.Fatalf("expected exactly one line-anchored managed END, got %d; file:\n%s", n, s)
 	}
 }
@@ -71,7 +71,7 @@ func TestP0EmitInlineSentinelNoDataLoss(t *testing.T) {
 func TestP0EmitIdempotentWithInlineSentinel(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "AGENTS.md")
-	user := "intro mentioning " + rules.OIKOS_END + " inline, not a real fence.\n\n"
+	user := "intro mentioning " + rules.ESSAIM_END + " inline, not a real fence.\n\n"
 	block := writeBlock("- only rule")
 	if err := os.WriteFile(path, []byte(user+block+"\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -80,7 +80,7 @@ func TestP0EmitIdempotentWithInlineSentinel(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, _ := os.ReadFile(path)
-	if n := strings.Count(string(got), rules.OIKOS_BEGIN); n != 1 {
+	if n := strings.Count(string(got), rules.ESSAIM_BEGIN); n != 1 {
 		t.Fatalf("idempotent re-emit must keep exactly one managed BEGIN; got %d:\n%s", n, string(got))
 	}
 	if !strings.Contains(string(got), "intro mentioning") {

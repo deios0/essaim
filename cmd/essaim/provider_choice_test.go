@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 // resolveProviderChoice precedence (P0-3 review fixes #1 and #2):
 //   - a "local" config choice must NOT be routed to the cloud even if a key is
 //     stored (#1);
-//   - a fixed upstream (OIKOS_UPSTREAM_BASE) must be honoured on every resolution,
+//   - a fixed upstream (ESSAIM_UPSTREAM_BASE) must be honoured on every resolution,
 //     not just startup, so a hot-reload doesn't clobber it into ErrNoBackend (#2).
 func TestResolveProviderChoice(t *testing.T) {
 	// #1: provider=local with a stored key → keyless (local) upstream, NOT the key.

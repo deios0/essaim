@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 func oneRule() []rules.Rule {
@@ -26,18 +26,18 @@ func TestBuildEmptyMessagesNoPanic(t *testing.T) {
 	}
 }
 
-// Bug 2b: a body whose ONLY element is a prior oikos block → stripped→clean empty.
-func TestBuildOnlyOikosBlockNoPanic(t *testing.T) {
-	blk := `{"role":"system","content":"` + rules.OIKOS_BEGIN + `\nx\n` + rules.OIKOS_END + `"}`
+// Bug 2b: a body whose ONLY element is a prior essaim block → stripped→clean empty.
+func TestBuildOnlyEssaimBlockNoPanic(t *testing.T) {
+	blk := `{"role":"system","content":"` + rules.ESSAIM_BEGIN + `\nx\n` + rules.ESSAIM_END + `"}`
 	body := []byte(`{"model":"gpt-4o","messages":[` + blk + `]}`)
 	defer func() {
 		if r := recover(); r != nil {
-			t.Fatalf("PANIC on only-oikos-block body: %v", r)
+			t.Fatalf("PANIC on only-essaim-block body: %v", r)
 		}
 	}()
 	res, err := Build(body, oneRule(), []string{"g"})
 	if err == nil && len(res.Body) > 0 && !json.Valid(res.Body) {
-		t.Fatalf("only-oikos-block produced INVALID json: %q", string(res.Body))
+		t.Fatalf("only-essaim-block produced INVALID json: %q", string(res.Body))
 	}
 	_ = errors.Is
 }

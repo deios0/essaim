@@ -11,7 +11,7 @@ import (
 // the trusted key already lives in ~/.bridge/keys/, config points at it).
 func TestBusJoinRoundTrips(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	in := Config{Bus: &BusJoin{URL: "https://team.eodhd.com/aibus", Zone: "shatale", KeyFile: "/home/u/.bridge/keys/aibus-clients/x.key"}}
 	if err := Save(in); err != nil {

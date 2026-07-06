@@ -17,8 +17,8 @@ node_modules/
 *.log
 
 # go
-/oikos
-oikosd
+/essaim
+essaimd
 *.test
 *.out
 /dist/

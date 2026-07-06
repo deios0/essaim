@@ -4,10 +4,10 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
-// P2-3: the prior-injected-block recognizer must strip a prior oikos block even
+// P2-3: the prior-injected-block recognizer must strip a prior essaim block even
 // when a tool/IDE round-trip has appended cosmetic trailing whitespace/newlines
 // (or prepended a leading newline) so the block differs from WrapBlock's exact
 // output by only surrounding whitespace. Without normalization the block ends
@@ -49,7 +49,7 @@ func TestStripPriorBlockTrailingNewline(t *testing.T) {
 	}
 }
 
-// P2-3 negative: normalization must NOT widen recognition to non-oikos content.
+// P2-3 negative: normalization must NOT widen recognition to non-essaim content.
 // A partial/truncated sentinel, an inline-marker prose message, and a
 // non-instruction (user) role echoing a complete block must STILL be preserved
 // (never stripped), exactly as before.

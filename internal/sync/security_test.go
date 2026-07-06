@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // --- P1: git argument injection ---------------------------------------------
@@ -39,10 +39,10 @@ func TestSanitizeRemoteRejectsOptionInjection(t *testing.T) {
 // forms still pass (https, ssh scp-like, ssh://, and a plain local path).
 func TestSanitizeRemoteAllowsLegitRemotes(t *testing.T) {
 	good := []string{
-		"https://github.com/you/oikos-rules.git",
-		"git@github.com:you/oikos-rules.git",
-		"ssh://git@github.com/you/oikos-rules.git",
-		"/home/you/oikos-rules",
+		"https://github.com/you/essaim-rules.git",
+		"git@github.com:you/essaim-rules.git",
+		"ssh://git@github.com/you/essaim-rules.git",
+		"/home/you/essaim-rules",
 		"./relative/vault-repo",
 	}
 	for _, u := range good {
@@ -85,7 +85,7 @@ func TestSyncRejectsOptionInjectionRemote(t *testing.T) {
 	work := t.TempDir()
 	_, err := Sync(Options{
 		VaultDir:  vault,
-		RemoteURL: "--upload-pack=touch /tmp/oikos_pwn",
+		RemoteURL: "--upload-pack=touch /tmp/essaim_pwn",
 		WorkRoot:  work,
 	})
 	if err == nil {

@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // Deferred-7: nativeFileEqual compares NativeFile paths case-insensitively on
@@ -60,7 +60,7 @@ func TestFindWiredToolCaseInsensitiveOnWindows(t *testing.T) {
 }
 
 // removeWiredTool must remove the record for a casing-different path on Windows,
-// so `oikos unwire` there never leaves an orphaned record behind.
+// so `essaim unwire` there never leaves an orphaned record behind.
 func TestRemoveWiredToolCaseInsensitiveOnWindows(t *testing.T) {
 	c := config.Config{
 		WiredTools: []config.WiredTool{

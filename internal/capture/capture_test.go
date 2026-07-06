@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // feed re-chunks s into the reassembler at the given byte boundaries to simulate
@@ -212,8 +212,8 @@ func TestNonStreamToolCallOnlyCapture(t *testing.T) {
 	}
 }
 
-// Test 36: ParseCleanMessages over an oikos-free snapshot yields the user
-// messages and NO oikos sentinels (the capture input is the clean snapshot).
+// Test 36: ParseCleanMessages over an essaim-free snapshot yields the user
+// messages and NO essaim sentinels (the capture input is the clean snapshot).
 func TestCaptureUsesCleanSnapshotNotInjected(t *testing.T) {
 	clean := []byte(`[{"role":"user","content":"what database should I use?"}]`)
 	msgs := ParseCleanMessages(clean)
@@ -221,24 +221,24 @@ func TestCaptureUsesCleanSnapshotNotInjected(t *testing.T) {
 		t.Fatalf("parsed messages = %+v", msgs)
 	}
 	c := Capture{OriginalMessages: msgs}
-	if strings.Contains(c.lastUserContent(), rules.OIKOS_BEGIN) {
-		t.Fatal("clean snapshot must carry no oikos block")
+	if strings.Contains(c.lastUserContent(), rules.ESSAIM_BEGIN) {
+		t.Fatal("clean snapshot must carry no essaim block")
 	}
 	if c.lastUserContent() != "what database should I use?" {
 		t.Fatalf("last user = %q", c.lastUserContent())
 	}
 }
 
-// Test 50: a captured body with a COMPLETE oikos block trips the hard invariant;
+// Test 50: a captured body with a COMPLETE essaim block trips the hard invariant;
 // a lone (truncated) sentinel does NOT.
 func TestHardInvariantRejectsCompleteBlockAllowsPartial(t *testing.T) {
 	full := rules.WrapBlock("- [H] Use Postgres: always")
 	c := Capture{OriginalMessages: []ChatMessage{{Role: "user", Content: "see: " + full}}}
 	if !c.ViolatesHardInvariant() {
-		t.Fatal("a complete oikos block must trip the hard invariant")
+		t.Fatal("a complete essaim block must trip the hard invariant")
 	}
 	// A lone BEGIN sentinel (truncated) must NOT trip it.
-	c2 := Capture{OriginalMessages: []ChatMessage{{Role: "user", Content: "stray " + rules.OIKOS_BEGIN + " no end"}}}
+	c2 := Capture{OriginalMessages: []ChatMessage{{Role: "user", Content: "stray " + rules.ESSAIM_BEGIN + " no end"}}}
 	if c2.ViolatesHardInvariant() {
 		t.Fatal("a lone/partial sentinel must NOT trip the hard invariant")
 	}

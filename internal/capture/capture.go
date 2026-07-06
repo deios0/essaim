@@ -2,7 +2,7 @@
 // reassembler that runs OFF the client response path (locked invariant 2 — the
 // capture tap is observation-only and never delays, backpressures, or alters the
 // verbatim client stream). It consumes the M2 pre-injection Snapshot
-// (CleanMessagesJSON, oikos-free) plus the reassembled assistant text to form an
+// (CleanMessagesJSON, essaim-free) plus the reassembled assistant text to form an
 // exchange handed to the async extractor.
 package capture
 
@@ -26,7 +26,7 @@ const maxAssistantText = 256 * 1024
 const maxRawLine = 1 << 20 // 1 MiB
 
 // Capture is the payload handed to the async learning queue (spec §4.1). It is
-// built OFF the hot path from the (oikos-free) clean snapshot + the reassembled
+// built OFF the hot path from the (essaim-free) clean snapshot + the reassembled
 // assistant text — never the injected array, never raw bytes carrying a prior
 // block (M3-R3).
 type Capture struct {
@@ -203,10 +203,10 @@ func AssistantTextFromNonStream(body []byte) string {
 	return out
 }
 
-// ParseCleanMessages parses the oikos-free CleanMessagesJSON (the messages array
+// ParseCleanMessages parses the essaim-free CleanMessagesJSON (the messages array
 // raw JSON) into flattened ChatMessages, OFF the hot path (M3-R3). It flattens
 // string content and multimodal text parts; non-flattenable content yields an
-// empty Content (never an oikos block recognizer trip — a pure-image message
+// empty Content (never an essaim block recognizer trip — a pure-image message
 // can't carry the sentinels).
 func ParseCleanMessages(arrJSON []byte) []ChatMessage {
 	var out []ChatMessage
@@ -222,7 +222,7 @@ func ParseCleanMessages(arrJSON []byte) []ChatMessage {
 
 // flattenContent extracts a message's text content (string, or concatenated
 // text parts). Mirrors inject.flattenContent semantics but returns "" rather
-// than an ok flag (an empty string is never an oikos block).
+// than an ok flag (an empty string is never an essaim block).
 func flattenContent(msg []byte) string {
 	v, typ, _, err := jsonparser.Get(msg, "content")
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 )
 
 // Verify does a live GET against the endpoint with the zone key. 2xx = the key
-// is accepted for this zone; a 401/403 surfaces as an error so `oikos join` can
+// is accepted for this zone; a 401/403 surfaces as an error so `essaim join` can
 // refuse to persist an unconfirmed/rejected key (mirrors the model-key live
 // validation — never persist on an unconfirmed credential).
 func TestVerifyAcceptsValidKey(t *testing.T) {

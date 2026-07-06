@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/capture"
-	"oikos/internal/extract"
+	"essaim/internal/capture"
+	"essaim/internal/extract"
 )
 
 func countMD(t *testing.T, root string) int {
@@ -130,7 +130,7 @@ func TestLearnerPromotesOnThreeSightingsThroughRealSeam(t *testing.T) {
 	}
 	// Confirm the draft on disk is now live.
 	var live int
-	_ = filepath.WalkDir(filepath.Join(vault, extract.OIKOS_DRAFT_DIR), func(p string, d os.DirEntry, err error) error {
+	_ = filepath.WalkDir(filepath.Join(vault, extract.ESSAIM_DRAFT_DIR), func(p string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".md") {
 			return nil
 		}

@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
-// `oikos bus` on a not-joined binary reports not-joined (and does NOT hit the
+// `essaim bus` on a not-joined binary reports not-joined (and does NOT hit the
 // network) — default-off must be observable.
 func TestRunBusNotJoined(t *testing.T) {
-	t.Setenv("OIKOS_CONFIG", filepath.Join(t.TempDir(), "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(t.TempDir(), "config.json"))
 	var out bytes.Buffer
 	if err := runBus(nil, &out); err != nil {
 		t.Fatalf("runBus not-joined: %v", err)
@@ -25,7 +25,7 @@ func TestRunBusNotJoined(t *testing.T) {
 	}
 }
 
-// `oikos bus` on a joined binary polls the endpoint with the zone key and reports
+// `essaim bus` on a joined binary polls the endpoint with the zone key and reports
 // the connection is live (proves the stored join actually reaches the bus).
 func TestRunBusJoinedPolls(t *testing.T) {
 	var gotKey string
@@ -37,7 +37,7 @@ func TestRunBusJoinedPolls(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	kf := filepath.Join(dir, "z.key")
 	_ = os.WriteFile(kf, []byte("zone-key\n"), 0o600)
 	_ = config.Save(config.Config{Bus: &config.BusJoin{URL: srv.URL, Zone: "team", KeyFile: kf}})

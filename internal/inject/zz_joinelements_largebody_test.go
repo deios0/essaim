@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // P1-a-gap: the strip-path MAIN inject fix (headInjectStripped) landed, but
@@ -18,12 +18,12 @@ import (
 //   - the empty-match-stripped emit (build.go:~134), where its output IS the body.
 //
 // Same trigger as the original P0-1 bug — a large multi-turn body that already
-// carries a prior oikos block forces the strip path — so a slow joinElements can
+// carries a prior essaim block forces the strip path — so a slow joinElements can
 // blow the <15ms budget and fail-open the moat (snapshot side) / re-serialize
 // slowly (empty-match side). This asserts joinElements is pre-sized single-copy:
 // a ~5MB body exercising BOTH paths stays <15ms AND is byte-exact.
 
-// EMPTY-MATCH STRIP PATH: a prior oikos block + NO matched rules. Build strips the
+// EMPTY-MATCH STRIP PATH: a prior essaim block + NO matched rules. Build strips the
 // block and rebuilds the array via joinElements — its output is the returned body.
 // Must be <15ms and byte-exact (block gone, every survivor verbatim).
 func TestJoinElementsEmptyMatchStripUnderBudget(t *testing.T) {
@@ -77,10 +77,10 @@ func TestJoinElementsEmptyMatchStripUnderBudget(t *testing.T) {
 	}
 }
 
-// SNAPSHOT PATH: a prior oikos block + a matched rule. Build injects via
+// SNAPSHOT PATH: a prior essaim block + a matched rule. Build injects via
 // headInjectStripped (already presized) but builds the capture snapshot
 // cleanArrJSON via joinElements. The whole Build (including the snapshot build)
-// must stay <15ms, and the snapshot must be oikos-free + byte-exact.
+// must stay <15ms, and the snapshot must be essaim-free + byte-exact.
 func TestJoinElementsSnapshotPathUnderBudget(t *testing.T) {
 	priorBlock := `{"role":"system","content":` + jsonStr(begin+"\nold stale rule body\n"+end) + `}`
 	huge := strings.Repeat("z", 5*1024*1024)
@@ -104,10 +104,10 @@ func TestJoinElementsSnapshotPathUnderBudget(t *testing.T) {
 		t.Fatalf("snapshot-path Build on 5MB took %v, must be < 15ms (pre-sized joinElements)", elapsed)
 	}
 
-	// Snapshot must be oikos-free and contain the surviving (huge) content verbatim.
+	// Snapshot must be essaim-free and contain the surviving (huge) content verbatim.
 	snap := string(res.Snapshot.CleanMessagesJSON)
 	if strings.Contains(snap, begin) || strings.Contains(snap, "old stale rule body") {
-		t.Fatalf("capture snapshot must be oikos-free")
+		t.Fatalf("capture snapshot must be essaim-free")
 	}
 	if !strings.Contains(snap, huge) {
 		t.Fatalf("snapshot must preserve the 5MB survivor byte-identical")

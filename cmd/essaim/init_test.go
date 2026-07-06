@@ -6,14 +6,14 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
-// `oikos init` seeds the vault + the demo rule, records the vault in config, and
+// `essaim init` seeds the vault + the demo rule, records the vault in config, and
 // prints the copy-paste prompt with the undeniable before/after.
 func TestRunInitSeedsAndPrintsDemo(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
 	vault := filepath.Join(home, "vault")
 
 	var out bytes.Buffer
@@ -32,10 +32,10 @@ func TestRunInitSeedsAndPrintsDemo(t *testing.T) {
 	}
 }
 
-// `oikos init` is idempotent — running it twice leaves exactly one starter rule.
+// `essaim init` is idempotent — running it twice leaves exactly one starter rule.
 func TestRunInitIdempotent(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
 	vault := filepath.Join(home, "vault")
 
 	var out bytes.Buffer
@@ -52,11 +52,11 @@ func TestRunInitIdempotent(t *testing.T) {
 	}
 }
 
-// With no --vault and a config already naming a vault, `oikos init` seeds INTO
+// With no --vault and a config already naming a vault, `essaim init` seeds INTO
 // the configured vault (it does not silently create a second one).
 func TestRunInitUsesConfiguredVault(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
 	vault := filepath.Join(home, "configured-vault")
 
 	// Pre-seed the config with a vault.

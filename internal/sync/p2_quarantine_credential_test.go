@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/extract"
-	"oikos/internal/rules"
+	"essaim/internal/extract"
+	"essaim/internal/rules"
 )
 
 // P2-5: a credential-bearing REMOTE rule must NEVER land in the local _inbox/ in

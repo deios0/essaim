@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // countsSidecar is the per-vault file the reinforce counters are persisted to.
@@ -33,7 +33,7 @@ const (
 // frontmatter-immutability rule). A reinforce increments the counter and records the time;
 // the sweep reads the count to decide a promote. There is NO weight cap (reference engine
 // has none is a bare `weight += 1`); if a cap were added it would
-// be an explicit oikos policy.
+// be an explicit essaim policy.
 //
 // The counts are mirrored to a per-vault sidecar (_inbox/.counts.json) so a
 // reinforce survives a daemon restart (P0-2). When path is "" (no vault / a
@@ -203,7 +203,7 @@ var syncFile = func(f *os.File) error { return f.Sync() }
 // sidecar (.counts.json), which gates the draft→live promotion (P0-2).
 func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".oikos-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".essaim-*.tmp")
 	if err != nil {
 		return err
 	}

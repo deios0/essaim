@@ -11,13 +11,13 @@ import (
 // F-B [BLOCKER — do-no-harm]: 413 / context-overflow retry-once.
 //
 // Injection can push a request that fit the model's window over it → the IDE
-// gets a 413 oikos caused. Per v1.1 §5.4 / A-2.4: after the first upstream send,
+// gets a 413 essaim caused. Per v1.1 §5.4 / A-2.4: after the first upstream send,
 // if status==413 OR the body matches a context-overflow signature AND not yet
 // retried → re-send the EXACT ORIGINAL unmutated body once (degraded=true).
 // Total upstream retries ≤ 1 per request (shared `retried` bool).
 
 // Test F-B (413): a fake upstream that returns 413 when the body contains the
-// oikos block but 200 without it ⇒ oikos retries once with origBody and the
+// essaim block but 200 without it ⇒ essaim retries once with origBody and the
 // client gets 200 + the original (un-injected) response.
 func TestRetryOnceOn413WithOriginalBody(t *testing.T) {
 	var calls int32
@@ -27,7 +27,7 @@ func TestRetryOnceOn413WithOriginalBody(t *testing.T) {
 		buf := new(strings.Builder)
 		_, _ = copyReader(buf, r.Body)
 		body := buf.String()
-		hasBlock := strings.Contains(body, "<!-- oikos:rules:begin v=1 -->")
+		hasBlock := strings.Contains(body, "<!-- essaim:rules:begin v=1 -->")
 		if hasBlock {
 			// Injected request: simulate it being pushed over the context window.
 			if n == 1 {
@@ -58,13 +58,13 @@ func TestRetryOnceOn413WithOriginalBody(t *testing.T) {
 	s.Handler().ServeHTTP(rec, req)
 
 	if !sawBlockFirst.Load() {
-		t.Fatalf("first upstream send must carry the injected oikos block (precondition)")
+		t.Fatalf("first upstream send must carry the injected essaim block (precondition)")
 	}
 	if got := atomic.LoadInt32(&calls); got != 2 {
 		t.Fatalf("expected exactly 2 upstream calls (inject 413 + retry clean), got %d", got)
 	}
 	if !secondWasClean.Load() {
-		t.Fatalf("the retry must re-send the ORIGINAL unmutated body (no oikos block)")
+		t.Fatalf("the retry must re-send the ORIGINAL unmutated body (no essaim block)")
 	}
 	if rec.Code != 200 {
 		t.Fatalf("client must get 200 from the clean retry, got %d", rec.Code)
@@ -90,7 +90,7 @@ func TestRetryOnceOnContextOverflowBody(t *testing.T) {
 		n := atomic.AddInt32(&calls, 1)
 		buf := new(strings.Builder)
 		_, _ = copyReader(buf, r.Body)
-		if strings.Contains(buf.String(), "<!-- oikos:rules:begin v=1 -->") {
+		if strings.Contains(buf.String(), "<!-- essaim:rules:begin v=1 -->") {
 			w.WriteHeader(http.StatusBadRequest) // 400 with overflow signature
 			_, _ = w.Write([]byte(`{"error":{"message":"This model's maximum context length exceeded","code":"context_length_exceeded"}}`))
 			return

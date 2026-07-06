@@ -12,14 +12,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '1.24.x' }
-      - run: CGO_ENABLED=0 go build -trimpath -o oikos ./cmd/oikos
+      - run: CGO_ENABLED=0 go build -trimpath -o essaim ./cmd/essaim
       - run: go vet ./...
       - name: gofmt
         run: 'test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)'
       - run: CGO_ENABLED=1 go test -race ./...
       - run: go install github.com/google/go-licenses@latest && go-licenses check ./... --disallowed_types=forbidden,restricted
       - name: no phone-home
-        # oikos must ship no telemetry / analytics / auto-update. concepts.go is
+        # essaim must ship no telemetry / analytics / auto-update. concepts.go is
         # the rule-matching VOCABULARY map: it lists observability-domain WORDS
         # ("opentelemetry", "sentry", …) as rule concepts, NOT as dependencies or
         # calls — so it is excluded; every other .go file is checked strictly.

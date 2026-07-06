@@ -31,21 +31,21 @@ func TestZeroValueIsEmpty(t *testing.T) {
 }
 
 func TestPathHonorsEnvOverride(t *testing.T) {
-	want := "/tmp/custom/oikos.json"
-	t.Setenv("OIKOS_CONFIG", want)
+	want := "/tmp/custom/essaim.json"
+	t.Setenv("ESSAIM_CONFIG", want)
 	got, err := Path()
 	if err != nil {
 		t.Fatalf("Path: %v", err)
 	}
 	if got != want {
-		t.Fatalf("Path with OIKOS_CONFIG override = %q, want %q", got, want)
+		t.Fatalf("Path with ESSAIM_CONFIG override = %q, want %q", got, want)
 	}
 }
 
 func TestPathDefaultUnderConfigDir(t *testing.T) {
 	// Clear the override so we exercise the default-dir branch.
-	t.Setenv("OIKOS_CONFIG", "")
-	os.Unsetenv("OIKOS_CONFIG")
+	t.Setenv("ESSAIM_CONFIG", "")
+	os.Unsetenv("ESSAIM_CONFIG")
 	got, err := Path()
 	if err != nil {
 		t.Fatalf("Path: %v", err)
@@ -54,14 +54,14 @@ func TestPathDefaultUnderConfigDir(t *testing.T) {
 	if base != "config.json" {
 		t.Fatalf("default config filename = %q, want config.json", base)
 	}
-	if filepath.Base(filepath.Dir(got)) != "oikos" {
-		t.Fatalf("default config dir must be .../oikos/, got %q", got)
+	if filepath.Base(filepath.Dir(got)) != "essaim" {
+		t.Fatalf("default config dir must be .../essaim/, got %q", got)
 	}
 }
 
 func TestLoadMissingReturnsEmptyNotError(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "nope", "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "nope", "config.json"))
 	c, err := Load()
 	if err != nil {
 		t.Fatalf("Load of a missing file must not error, got %v", err)
@@ -73,7 +73,7 @@ func TestLoadMissingReturnsEmptyNotError(t *testing.T) {
 
 func TestSaveThenLoadRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "sub", "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "sub", "config.json"))
 
 	want := Config{
 		Provider: "openrouter",
@@ -109,7 +109,7 @@ func TestSaveIsPrivateFilePerm(t *testing.T) {
 	}
 	dir := t.TempDir()
 	p := filepath.Join(dir, "config.json")
-	t.Setenv("OIKOS_CONFIG", p)
+	t.Setenv("ESSAIM_CONFIG", p)
 	if err := Save(Config{Provider: "local"}); err != nil {
 		t.Fatalf("Save: %v", err)
 	}
@@ -123,13 +123,13 @@ func TestSaveIsPrivateFilePerm(t *testing.T) {
 }
 
 // TestResolvePathWindowsAppData asserts that on Windows the config lands under
-// %AppData%\oikos\config.json — the no-admin, per-user roaming dir — using
+// %AppData%\essaim\config.json — the no-admin, per-user roaming dir — using
 // backslash-joined Windows-style paths. resolvePath is platform-injectable so
 // this runs on any host (the real Path() defers to os.UserConfigDir).
 func TestResolvePathWindowsAppData(t *testing.T) {
 	appData := `C:\Users\denis\AppData\Roaming`
 	env := func(k string) string {
-		if k == "OIKOS_CONFIG" {
+		if k == "ESSAIM_CONFIG" {
 			return ""
 		}
 		return ""
@@ -141,19 +141,19 @@ func TestResolvePathWindowsAppData(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolvePath: %v", err)
 	}
-	want := appData + `\oikos\config.json`
+	want := appData + `\essaim\config.json`
 	if got != want {
 		t.Fatalf("windows config path = %q, want %q", got, want)
 	}
 }
 
 // TestResolvePathHonorsWindowsEnvOverride asserts a Windows-style absolute path
-// passed via OIKOS_CONFIG is returned verbatim (drive letter + backslashes
+// passed via ESSAIM_CONFIG is returned verbatim (drive letter + backslashes
 // preserved), so a corp deployment can pin the store under %LOCALAPPDATA%.
 func TestResolvePathHonorsWindowsEnvOverride(t *testing.T) {
-	want := `C:\Users\denis\AppData\Local\Programs\oikos\config.json`
+	want := `C:\Users\denis\AppData\Local\Programs\essaim\config.json`
 	env := func(k string) string {
-		if k == "OIKOS_CONFIG" {
+		if k == "ESSAIM_CONFIG" {
 			return want
 		}
 		return ""
@@ -165,13 +165,13 @@ func TestResolvePathHonorsWindowsEnvOverride(t *testing.T) {
 		t.Fatalf("resolvePath: %v", err)
 	}
 	if got != want {
-		t.Fatalf("windows OIKOS_CONFIG override = %q, want %q", got, want)
+		t.Fatalf("windows ESSAIM_CONFIG override = %q, want %q", got, want)
 	}
 }
 
 // errUnusedConfigDir is returned by a userConfigDir stub that must not be called
 // (the env override short-circuits before it).
-var errUnusedConfigDir = errSentinel("userConfigDir must not be called when OIKOS_CONFIG is set")
+var errUnusedConfigDir = errSentinel("userConfigDir must not be called when ESSAIM_CONFIG is set")
 
 type errSentinel string
 
@@ -230,7 +230,7 @@ func TestUpsertToolPerProjectNativeFileCoexist(t *testing.T) {
 // first, losing an update. Under Update every one of the N writes must land.
 func TestUpdateConcurrentAddsAllSurvive(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	const n = 25
 	var wg sync.WaitGroup
@@ -286,7 +286,7 @@ func TestUpdateConcurrentAddsAllSurvive(t *testing.T) {
 // on disk is left exactly as it was.
 func TestUpdateMutateErrorDoesNotSave(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	// Seed a known state.
 	if err := Save(Config{Provider: "local", VaultDir: "/v"}); err != nil {

@@ -8,17 +8,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 var errKeyRejectedTest = errors.New("test: key rejected")
 
 // P0-3 — KEY / CONFIG HOT-RELOAD. When the user sets the key via /setup while
-// `oikos serve` is running, it must take effect WITHOUT a restart. The proxy must
+// `essaim serve` is running, it must take effect WITHOUT a restart. The proxy must
 // re-resolve its provider/key from the store after a successful /setup POST, so
 // the NEXT proxied request uses the new upstream — no process restart, no friction.
 //
-// This test reproduces cmd/oikos's wiring: a store the /setup POST writes through,
+// This test reproduces cmd/essaim's wiring: a store the /setup POST writes through,
 // an onProviderUpdate hook that re-reads that store and SetProvider's a keyed
 // upstream, and a key-validator stand-in (so no network). It proves a chat request
 // that 401s before the key is set succeeds (same process) right after.
@@ -39,7 +39,7 @@ func TestKeyHotReloadNoRestart(t *testing.T) {
 	t.Cleanup(up.Close)
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	store := &fakeSecretStore{m: map[string]string{}}
 
@@ -53,7 +53,7 @@ func TestKeyHotReloadNoRestart(t *testing.T) {
 		}
 		return errKeyRejectedTest
 	})
-	// The hot-reload hook — exactly cmd/oikos's shape: re-read the store, and if a
+	// The hot-reload hook — exactly cmd/essaim's shape: re-read the store, and if a
 	// key is now present, swap in a keyed provider live. No restart.
 	s.SetOnProviderUpdate(func() {
 		if key, _ := store.Get("openrouter-key"); key != "" {

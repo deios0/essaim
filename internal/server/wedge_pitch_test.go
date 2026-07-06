@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// The wedge pitch is the ONE differentiating sentence: oikos auto-writes &
+// The wedge pitch is the ONE differentiating sentence: essaim auto-writes &
 // maintains your AGENTS.md from your AI corrections (a static file doesn't learn).
 // It must appear verbatim, prominently, on the first-run /setup page (the front
 // door a new user sees). This guards against a future copy edit quietly dropping
@@ -28,9 +28,9 @@ func TestSetupPageCarriesWedgePitch(t *testing.T) {
 	// The native rules file the pitch rides — the AGENTS.md standard — must be named
 	// on the page so the differentiator is concrete, not abstract.
 	if !strings.Contains(body, "AGENTS.md") {
-		t.Fatalf("/setup page must name AGENTS.md (the standard oikos rides)")
+		t.Fatalf("/setup page must name AGENTS.md (the standard essaim rides)")
 	}
-	// The tools oikos can ACTUALLY reach must each appear in the wire surface so the
+	// The tools essaim can ACTUALLY reach must each appear in the wire surface so the
 	// "every tool" claim is concrete (Cursor + Continue via base_url, Claude Code
 	// via its native file). Copilot is NOT one of them — it must never be claimed.
 	for _, tool := range []string{"Cursor", "Claude Code", "Continue"} {
@@ -38,9 +38,9 @@ func TestSetupPageCarriesWedgePitch(t *testing.T) {
 			t.Fatalf("/setup page must name the tool %q in the wire surface", tool)
 		}
 	}
-	// Guard against re-introducing the false "Copilot" claim oikos cannot deliver.
+	// Guard against re-introducing the false "Copilot" claim essaim cannot deliver.
 	if strings.Contains(body, "Copilot") {
-		t.Fatalf("/setup page must NOT claim Copilot — oikos cannot wire it")
+		t.Fatalf("/setup page must NOT claim Copilot — essaim cannot wire it")
 	}
 }
 
@@ -54,6 +54,6 @@ func TestWedgePitchWording(t *testing.T) {
 		}
 	}
 	if strings.Contains(WedgePitch, "Copilot") {
-		t.Fatalf("WedgePitch %q must NOT name Copilot — oikos cannot wire it", WedgePitch)
+		t.Fatalf("WedgePitch %q must NOT name Copilot — essaim cannot wire it", WedgePitch)
 	}
 }

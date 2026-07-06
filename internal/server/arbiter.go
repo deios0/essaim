@@ -2,21 +2,21 @@ package server
 
 import "net/http"
 
-// oikosToolHeader is the wire-time per-tool identity header (M3-R9 / §5.3). It
-// is injected into a tool's config by `oikosd wire` (reusing the design-closure
-// §6 per-tool-token plumbing), so oikos knows WHICH tool sent a request. The
+// essaimToolHeader is the wire-time per-tool identity header (M3-R9 / §5.3). It
+// is injected into a tool's config by `essaimd wire` (reusing the design-closure
+// §6 per-tool-token plumbing), so essaim knows WHICH tool sent a request. The
 // arbiter keys on THIS, never on up.BaseURL — SingleUpstream.Select returns the
 // IDENTICAL OpenRouter base_url for every keyed request, so two tools sharing
 // one key are indistinguishable by base_url; the channel split must be by tool
 // identity (closes BL-4).
-const oikosToolHeader = "X-Oikos-Tool"
+const essaimToolHeader = "X-Essaim-Tool"
 
 // toolIdentity returns the wire-time tool identity for a request: the
-// X-Oikos-Tool header (listener-derived identity would be the alternative on a
+// X-Essaim-Tool header (listener-derived identity would be the alternative on a
 // per-tool loopback socket). Empty when unwired. User-Agent is deliberately NOT
 // used — it is spoofable/absent; the identity is wire-time-assigned (B-4.1).
 func (s *Server) toolIdentity(r *http.Request) string {
-	return r.Header.Get(oikosToolHeader)
+	return r.Header.Get(essaimToolHeader)
 }
 
 // fileEmitActiveFor reports whether a tool is wired as a NATIVE-FILE channel —

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 func readFile(t *testing.T, path string) string {
@@ -107,7 +107,7 @@ func TestEnvExportFormIsCopyPasteable(t *testing.T) {
 
 func TestApplyProxyToolPersistsWiringIdempotently(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	p, _ := Resolve("cursor", "")
 	if _, err := Apply(p); err != nil {
@@ -137,7 +137,7 @@ func TestApplyProxyToolPersistsWiringIdempotently(t *testing.T) {
 
 func TestApplyNativeFileCreatesManagedBlockAndIsIdempotent(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	p, err := Resolve("claude-code", dir)
 	if err != nil {
@@ -149,8 +149,8 @@ func TestApplyNativeFileCreatesManagedBlockAndIsIdempotent(t *testing.T) {
 	// The native file should now exist with the managed sentinels so the emitter
 	// has an anchor to write into.
 	b := readFile(t, p.NativeFile)
-	if !strings.Contains(b, "oikos:rules:begin") || !strings.Contains(b, "oikos:rules:end") {
-		t.Fatalf("native file should contain the managed oikos block sentinels, got:\n%s", b)
+	if !strings.Contains(b, "essaim:rules:begin") || !strings.Contains(b, "essaim:rules:end") {
+		t.Fatalf("native file should contain the managed essaim block sentinels, got:\n%s", b)
 	}
 
 	// Apply again — must not append a second managed block.
@@ -158,7 +158,7 @@ func TestApplyNativeFileCreatesManagedBlockAndIsIdempotent(t *testing.T) {
 		t.Fatalf("second Apply: %v", err)
 	}
 	b2 := readFile(t, p.NativeFile)
-	if got := strings.Count(b2, "oikos:rules:begin"); got != 1 {
+	if got := strings.Count(b2, "essaim:rules:begin"); got != 1 {
 		t.Fatalf("native file has %d managed blocks after re-apply, want exactly 1 (idempotent)", got)
 	}
 
@@ -184,9 +184,9 @@ func TestJoinNativeWindowsAbsolutePath(t *testing.T) {
 // TestJoinNativeWindowsLocalAppData covers a %LOCALAPPDATA%-rooted dir (the
 // no-admin Programs dir the .ps1 installer uses) — the backslash join must hold.
 func TestJoinNativeWindowsLocalAppData(t *testing.T) {
-	dir := `C:\Users\denis\AppData\Local\Programs\oikos`
+	dir := `C:\Users\denis\AppData\Local\Programs\essaim`
 	got := joinNativePath(dir, "AGENTS.md", true)
-	want := `C:\Users\denis\AppData\Local\Programs\oikos\AGENTS.md`
+	want := `C:\Users\denis\AppData\Local\Programs\essaim\AGENTS.md`
 	if got != want {
 		t.Fatalf("windows localappdata native path = %q, want %q", got, want)
 	}
@@ -204,19 +204,19 @@ func TestJoinNativeAlreadyHasTrailingSep(t *testing.T) {
 
 func TestApplyNativeFilePreservesExistingUserContent(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	target := filepath.Join(dir, "CLAUDE.md")
-	writeFile(t, target, "# My Project\n\nMy own rules. oikos must never touch these.\n")
+	writeFile(t, target, "# My Project\n\nMy own rules. essaim must never touch these.\n")
 
 	p, _ := Resolve("claude-code", dir)
 	if _, err := Apply(p); err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
 	b := readFile(t, target)
-	if !strings.Contains(b, "My own rules. oikos must never touch these.") {
+	if !strings.Contains(b, "My own rules. essaim must never touch these.") {
 		t.Fatalf("Apply clobbered the user's existing content:\n%s", b)
 	}
-	if !strings.Contains(b, "oikos:rules:begin") {
+	if !strings.Contains(b, "essaim:rules:begin") {
 		t.Fatalf("Apply did not add the managed block:\n%s", b)
 	}
 }

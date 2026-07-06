@@ -3,12 +3,12 @@ package server
 import (
 	"sync/atomic"
 
-	"oikos/internal/capture"
-	"oikos/internal/inject"
+	"essaim/internal/capture"
+	"essaim/internal/inject"
 )
 
 // CaptureSink consumes a finished Capture off the response path. The server is
-// agnostic to what the sink does (extract/learn); cmd/oikos wires the real one.
+// agnostic to what the sink does (extract/learn); cmd/essaim wires the real one.
 // A nil sink disables capture (the M2 default — pure verbatim relay).
 type CaptureSink interface {
 	Enqueue(capture.Capture)
@@ -172,7 +172,7 @@ func (cc *captureCtx) teeNonStreamBytes(buf []byte) {
 // finish assembles the Capture and enqueues it to the sink (off the response
 // path). isStream selects the assistant-text source; partial marks an
 // EOF-before-[DONE] / client-disconnect / cap. It enforces the HARD INVARIANT
-// (no complete oikos block in any captured body or the assistant text) AFTER
+// (no complete essaim block in any captured body or the assistant text) AFTER
 // redaction, dropping the capture on a violation.
 func (s *Server) finish(cc *captureCtx, isStream, partial bool) {
 	if cc == nil || s.captureSink == nil {
@@ -215,7 +215,7 @@ func (s *Server) finish(cc *captureCtx, isStream, partial bool) {
 	c.Redact()
 	if c.ViolatesHardInvariant() {
 		s.capture.dropped.Add(1)
-		return // a complete oikos block leaked into the capture → drop it
+		return // a complete essaim block leaked into the capture → drop it
 	}
 	// A sink that reports acceptance (the learner's non-blocking TryEnqueue) lets us
 	// count only ACCEPTED captures — a full-queue DROP must not be counted as

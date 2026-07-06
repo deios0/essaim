@@ -28,7 +28,7 @@ func TestCountsSidecarFsyncsTempBeforeRename(t *testing.T) {
 	orig := syncFile
 	syncFile = func(f *os.File) error {
 		synced = true
-		// At the moment we fsync, the temp is named ".oikos-*.tmp", and the FINAL
+		// At the moment we fsync, the temp is named ".essaim-*.tmp", and the FINAL
 		// path must NOT exist yet (the rename happens only after the sync).
 		if _, err := os.Stat(final); err == nil {
 			finalExistedAtSync = true

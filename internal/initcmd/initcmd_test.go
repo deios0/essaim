@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
-	"oikos/internal/rules"
+	"essaim/internal/config"
+	"essaim/internal/rules"
 )
 
 // The canonical "aha" query a brand-new user is told to paste.
@@ -19,8 +19,8 @@ const ahaQuery = "create a Card component"
 // hangs off of.
 func TestRunSeedsVaultAndStarterRule(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	vault := filepath.Join(home, "oikos-vault")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	vault := filepath.Join(home, "essaim-vault")
 
 	res, err := Run(Options{VaultDir: vault})
 	if err != nil {
@@ -54,14 +54,14 @@ func TestRunSeedsVaultAndStarterRule(t *testing.T) {
 	}
 }
 
-// P2-B: when `oikos init` seeds a vault, it must drop _inbox/.gitignore (the SAME
+// P2-B: when `essaim init` seeds a vault, it must drop _inbox/.gitignore (the SAME
 // M3 mechanism rules.EnsureInboxDir uses) so a user who runs init INSIDE a git
 // work-tree never accidentally commits ephemeral drafts / the reinforce-counter
 // sidecar. The marker must ignore everything under _inbox/ except itself.
 func TestRunSeedsInboxGitignore(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	vault := filepath.Join(home, "oikos-vault")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	vault := filepath.Join(home, "essaim-vault")
 
 	if _, err := Run(Options{VaultDir: vault}); err != nil {
 		t.Fatalf("Run: %v", err)
@@ -70,7 +70,7 @@ func TestRunSeedsInboxGitignore(t *testing.T) {
 	gi := filepath.Join(vault, "_inbox", ".gitignore")
 	body, err := os.ReadFile(gi)
 	if err != nil {
-		t.Fatalf("oikos init must seed %s so a git-tracked vault stays clean: %v", gi, err)
+		t.Fatalf("essaim init must seed %s so a git-tracked vault stays clean: %v", gi, err)
 	}
 	s := string(body)
 	if !strings.Contains(s, "*") || !strings.Contains(s, "!.gitignore") {
@@ -78,7 +78,7 @@ func TestRunSeedsInboxGitignore(t *testing.T) {
 	}
 }
 
-// P2-fix: EnsureInboxDir failure must be truly best-effort — `oikos init` must
+// P2-fix: EnsureInboxDir failure must be truly best-effort — `essaim init` must
 // STILL succeed (seed the vault, the starter rule, and record the config) even
 // when the _inbox/.gitignore hygiene step can't run. We force the failure by
 // pre-creating vault/_inbox as a FILE, so os.MkdirAll("_inbox") errors ("not a
@@ -86,8 +86,8 @@ func TestRunSeedsInboxGitignore(t *testing.T) {
 // that error and aborted init; the fix logs a warning and continues.
 func TestRunSucceedsWhenInboxCreationFails(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	vault := filepath.Join(home, "oikos-vault")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	vault := filepath.Join(home, "essaim-vault")
 	if err := os.MkdirAll(vault, 0o755); err != nil {
 		t.Fatalf("prep vault: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestStarterRuleDoesNotInjectForUnrelatedQuery(t *testing.T) {
 }
 
 // THE EMIT-PATH PROOF: init's printed quickstart sends a brand-new user
-// straight to `oikos emit` (the proxy-less path). The seeded starter rule must
+// straight to `essaim emit` (the proxy-less path). The seeded starter rule must
 // therefore clear the native-block gate (isLive ∧ isEager via EmitEager) — or
 // the FIRST thing a new user sees is an empty fenced block flatly
 // contradicting init's "One starter rule is live in your vault" message
@@ -218,6 +218,6 @@ func TestStarterRuleIsEmittedIntoNativeBlock(t *testing.T) {
 		t.Fatalf("EmitEager: %v", err)
 	}
 	if len(res.Kept) != 1 {
-		t.Fatalf("starter rule must be emitted by the native-file path, EmitEager kept %d — a fresh `oikos init` + `oikos emit` must not produce an empty block", len(res.Kept))
+		t.Fatalf("starter rule must be emitted by the native-file path, EmitEager kept %d — a fresh `essaim init` + `essaim emit` must not produce an empty block", len(res.Kept))
 	}
 }

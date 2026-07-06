@@ -4,12 +4,12 @@ import (
 	"os"
 	"sync"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // LiveWiredTools returns the predicate the heal watcher uses to learn the CURRENT
-// set of wired-tool names (what oikos's config.json holds right now), so a tool
-// removed by `oikos unwire` on a running daemon is no longer healed — no restart
+// set of wired-tool names (what essaim's config.json holds right now), so a tool
+// removed by `essaim unwire` on a running daemon is no longer healed — no restart
 // (RESPECTS-UNWIRE / P1). It is the live overlay over the boot-time heal targets.
 //
 // It is CHEAP on the hot pass: it stats config.json and only re-reads/re-parses

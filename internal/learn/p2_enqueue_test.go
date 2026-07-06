@@ -3,8 +3,8 @@ package learn
 import (
 	"testing"
 
-	"oikos/internal/capture"
-	"oikos/internal/extract"
+	"essaim/internal/capture"
+	"essaim/internal/extract"
 )
 
 // P2-1: Enqueue drops on a full queue, but the drop was INVISIBLE to the caller

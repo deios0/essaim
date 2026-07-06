@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // P1 (respects-unwire): the NativeFileEmitter snapshots its wired tools once at
-// boot, so `oikos unwire <tool>` on a running daemon must stop the emitter from
+// boot, so `essaim unwire <tool>` on a running daemon must stop the emitter from
 // re-injecting that tool's block on the next index swap — no restart. Mirrors
 // heal.Watcher.SetLiveTools. With a live-tools predicate installed, a tool no
 // longer in the live set is SKIPPED (its file is never written), while a still-
@@ -57,11 +57,11 @@ func TestEmitterRespectsUnwireSkipsRemovedTool(t *testing.T) {
 	}
 
 	liveContent, _ := os.ReadFile(live)
-	if !strings.Contains(string(liveContent), rules.OIKOS_BEGIN) {
+	if !strings.Contains(string(liveContent), rules.ESSAIM_BEGIN) {
 		t.Fatalf("live tool file must carry the block:\n%s", liveContent)
 	}
 	unwiredContent, _ := os.ReadFile(unwired)
-	if strings.Contains(string(unwiredContent), rules.OIKOS_BEGIN) {
+	if strings.Contains(string(unwiredContent), rules.ESSAIM_BEGIN) {
 		t.Fatalf("unwired tool file must NOT be written (respects-unwire):\n%s", unwiredContent)
 	}
 }
@@ -107,7 +107,7 @@ func TestEmitterRespectsUnwirePerProjectSameToolName(t *testing.T) {
 	if st[projB] != StatusWritten {
 		t.Fatalf("still-wired project B must be written, got %v", st[projB])
 	}
-	if b, _ := os.ReadFile(projA); strings.Contains(string(b), rules.OIKOS_BEGIN) {
+	if b, _ := os.ReadFile(projA); strings.Contains(string(b), rules.ESSAIM_BEGIN) {
 		t.Fatalf("unwired project A file must NOT be written")
 	}
 }

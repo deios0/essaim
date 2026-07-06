@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>oikos setup</title>
+<title>essaim setup</title>
 <style>
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
@@ -67,22 +67,22 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>oikos is running <span class="status">&#10003;</span></h1>
+  <h1>essaim is running <span class="status">&#10003;</span></h1>
   <div class="addr">http://127.0.0.1:4141</div>
 
-  <!-- The wedge: oikos auto-writes & maintains your AGENTS.md from your AI
+  <!-- The wedge: essaim auto-writes & maintains your AGENTS.md from your AI
        corrections. It RIDES the AGENTS.md standard (a static file doesn't learn —
-       you hand-write it; oikos keeps it current). The {{WEDGE_PITCH}} placeholder
+       you hand-write it; essaim keeps it current). The {{WEDGE_PITCH}} placeholder
        is substituted server-side from the single WedgePitch source of truth so
        this copy never drifts. Indie-dev voice; free for everyone. -->
-  <p class="pitch">oikos auto-writes &amp; keeps your <span class="one">AGENTS.md</span> current <span class="all">from your AI corrections</span>.</p>
-  <p class="pitch-sub">Teach a preference once — it stays live in every tool's native rules file (AGENTS.md, plus CLAUDE.md / GEMINI.md mirrors). A static file doesn't learn; oikos does. <span hidden>{{WEDGE_PITCH}}</span></p>
-  <p class="note">Run <code>oikos emit</code> anytime to regenerate your AGENTS.md from the vault — no proxy needed. Prefer live capture? Turn on <b>live mode</b> below (the optional proxy). Tip: a rule fires when it shares words with your request — write the vocabulary of the questions it should catch into the rule (a &ldquo;use PostgreSQL&rdquo; rule should say &ldquo;database&rdquo; too). See <code>docs/writing-rules.md</code>.</p>
+  <p class="pitch">essaim auto-writes &amp; keeps your <span class="one">AGENTS.md</span> current <span class="all">from your AI corrections</span>.</p>
+  <p class="pitch-sub">Teach a preference once — it stays live in every tool's native rules file (AGENTS.md, plus CLAUDE.md / GEMINI.md mirrors). A static file doesn't learn; essaim does. <span hidden>{{WEDGE_PITCH}}</span></p>
+  <p class="note">Run <code>essaim emit</code> anytime to regenerate your AGENTS.md from the vault — no proxy needed. Prefer live capture? Turn on <b>live mode</b> below (the optional proxy). Tip: a rule fires when it shares words with your request — write the vocabulary of the questions it should catch into the rule (a &ldquo;use PostgreSQL&rdquo; rule should say &ldquo;database&rdquo; too). See <code>docs/writing-rules.md</code>.</p>
 
   <!-- 1. Model (only needed for optional live mode) -->
   <div class="card">
-    <h2>Live mode (optional) — how should oikos talk to AI models?</h2>
-    <div class="muted" style="margin-bottom:.6rem">Only needed if you turn on the optional proxy below for real-time correction capture. The default path — <code>oikos emit</code> writing your AGENTS.md from the vault — needs no model and no key.</div>
+    <h2>Live mode (optional) — how should essaim talk to AI models?</h2>
+    <div class="muted" style="margin-bottom:.6rem">Only needed if you turn on the optional proxy below for real-time correction capture. The default path — <code>essaim emit</code> writing your AGENTS.md from the vault — needs no model and no key.</div>
     <label class="opt">
       <input type="radio" name="provider" value="local" id="p-local">
       <span class="opt-body">
@@ -110,7 +110,7 @@
   <!-- 2. Tools -->
   <div class="card">
     <h2>Which tools should learn from your corrections?</h2>
-    <div class="muted" style="margin-bottom:.6rem">Claude Code reads its native file (oikos keeps it current — no proxy). Cursor &amp; Continue capture corrections live through the optional proxy (live mode).</div>
+    <div class="muted" style="margin-bottom:.6rem">Claude Code reads its native file (essaim keeps it current — no proxy). Cursor &amp; Continue capture corrections live through the optional proxy (live mode).</div>
     <div class="tools">
       <label><input type="checkbox" class="tool" value="cursor"> Cursor</label>
       <label><input type="checkbox" class="tool" value="claude-code"> Claude Code</label>
@@ -132,9 +132,9 @@
     <summary>Advanced</summary>
     <div class="card">
       <h2>Vault location</h2>
-      <div class="muted">Where oikos keeps the corpus it learns. Leave blank to skip.</div>
+      <div class="muted">Where essaim keeps the corpus it learns. Leave blank to skip.</div>
       <div class="row" style="margin-top:.5rem">
-        <input type="text" id="vault-dir" placeholder="/home/you/oikos-vault">
+        <input type="text" id="vault-dir" placeholder="/home/you/essaim-vault">
         <button id="save-vault" type="button">Save</button>
         <span id="vault-result"></span>
       </div>
@@ -142,7 +142,7 @@
   </details>
 
   <hr>
-  <div class="muted">oikos stores no account, phones home to nothing, and keeps your key in your OS keychain.</div>
+  <div class="muted">essaim stores no account, phones home to nothing, and keeps your key in your OS keychain.</div>
 </div>
 
 <script>

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // helpers ---------------------------------------------------------------------
@@ -108,7 +108,7 @@ func TestInjectPreservesSingleClientSystemByteIdentical(t *testing.T) {
 		t.Fatalf("want 3, got %d", len(out))
 	}
 	if out[0].Role != "system" || !strings.HasPrefix(out[0].Content, begin+"\n") {
-		t.Fatalf("oikos block must lead: %+v", out[0])
+		t.Fatalf("essaim block must lead: %+v", out[0])
 	}
 	if out[1].Role != "system" || out[1].Content != "BIG SYSTEM PROMPT" {
 		t.Fatalf("client system must be byte-identical (no merge): %+v", out[1])
@@ -252,7 +252,7 @@ func TestLeadingUserPreambleBlockAtIndex0(t *testing.T) {
 	body := []byte(`{"messages":[{"role":"user","content":"bootstrap"},{"role":"system","content":"s"},{"role":"user","content":"u"}]}`)
 	res, _ := Build(body, []rules.Rule{mkRule("r1", "T", "B")}, nil)
 	out := parseOut(t, res.Body)
-	// Expected (v1.1 A-5.3.1): [oikos_block, user bootstrap, system, user]
+	// Expected (v1.1 A-5.3.1): [essaim_block, user bootstrap, system, user]
 	if !strings.HasPrefix(out[0].Content, begin+"\n") || !strings.HasSuffix(out[0].Content, "\n"+end) {
 		t.Fatalf("block must be at index 0 (A-5.3.1), got: %+v", out[0])
 	}
@@ -298,7 +298,7 @@ func TestInjectIndex0DoesNotSplitAssistantToolPair(t *testing.T) {
 	if err := json.Unmarshal(res.Body, &req); err != nil {
 		t.Fatalf("spliced body must be valid JSON: %v\n%s", err, res.Body)
 	}
-	// Index 0 must be the oikos block; the assistant{tool_calls} and its tool reply
+	// Index 0 must be the essaim block; the assistant{tool_calls} and its tool reply
 	// must be adjacent and in order right after it.
 	var cs0 string
 	if len(req.Messages[0].Content) > 0 && req.Messages[0].Content[0] == '"' {

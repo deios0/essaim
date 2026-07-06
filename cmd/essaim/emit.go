@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oikos/internal/config"
-	"oikos/internal/emit"
-	"oikos/internal/rules"
+	"essaim/internal/config"
+	"essaim/internal/emit"
+	"essaim/internal/rules"
 )
 
 // stringSlice is a repeatable string flag (`--file a=b --file c=d`).
@@ -22,25 +22,25 @@ func (s *stringSlice) Set(v string) error {
 	return nil
 }
 
-// runEmit implements `oikos emit` — the STANDALONE NativeFileEmitter path. It
-// regenerates the ranked, LIVE-only oikos block from the vault and writes it into
+// runEmit implements `essaim emit` — the STANDALONE NativeFileEmitter path. It
+// regenerates the ranked, LIVE-only essaim block from the vault and writes it into
 // each wired native instruction file (AGENTS.md / CLAUDE.md / GEMINI.md) ON
 // DEMAND, with NO proxy running. It is the first-class way to keep your AGENTS.md
 // current from your correction-learned vault: the proxy's "live mode" does this
-// continuously, `oikos emit` does it once.
+// continuously, `essaim emit` does it once.
 //
-//	oikos emit                              # vault + native files from config
-//	oikos emit --vault <dir>               # override the vault
-//	oikos emit --file <name>=<path> [...]  # explicit native-file target(s)
+//	essaim emit                              # vault + native files from config
+//	essaim emit --vault <dir>               # override the vault
+//	essaim emit --file <name>=<path> [...]  # explicit native-file target(s)
 //
 // Target resolution (first non-empty wins): --file flags, then the
-// OIKOS_NATIVE_FILE_TOOLS env (`name=path,name=path`), then the persisted
+// ESSAIM_NATIVE_FILE_TOOLS env (`name=path,name=path`), then the persisted
 // config's native_file wired tools. Vault resolution (first non-empty wins):
-// --vault, OIKOS_VAULT, the persisted config's vault, else ~/oikos-vault.
+// --vault, ESSAIM_VAULT, the persisted config's vault, else ~/essaim-vault.
 //
 // It is the SAME emitter the daemon uses (one ranked source, one fenced block,
 // idempotent, atomic, backup-on-first-write, credential-scrubbing) — so a file
-// kept current by `oikos emit` is byte-identical to one the live proxy maintains.
+// kept current by `essaim emit` is byte-identical to one the live proxy maintains.
 //
 // Credential scrubbing is the shared lexicon predicate (extract.RedactCredentials
 // / ContainsCredential): every armor-bearing key (PEM/PGP private-key block, lone
@@ -56,7 +56,7 @@ func (s *stringSlice) Set(v string) error {
 func runEmit(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("emit", flag.ContinueOnError)
 	fs.SetOutput(out)
-	vaultFlag := fs.String("vault", "", "vault directory to emit from (default: OIKOS_VAULT, else the configured vault, else ~/oikos-vault)")
+	vaultFlag := fs.String("vault", "", "vault directory to emit from (default: ESSAIM_VAULT, else the configured vault, else ~/essaim-vault)")
 	var fileFlags stringSlice
 	fs.Var(&fileFlags, "file", "a native-file target as name=path (repeatable; e.g. --file claude-code=./CLAUDE.md)")
 	if err := fs.Parse(args); err != nil {
@@ -67,10 +67,10 @@ func runEmit(args []string, out io.Writer) error {
 
 	vault := resolveEmitVault(*vaultFlag, cfg)
 	if vault == "" {
-		return fmt.Errorf("oikos emit: no vault configured (set --vault, OIKOS_VAULT, or run `oikos init`)")
+		return fmt.Errorf("essaim emit: no vault configured (set --vault, ESSAIM_VAULT, or run `essaim init`)")
 	}
 	if info, err := os.Stat(vault); err != nil || !info.IsDir() {
-		return fmt.Errorf("oikos emit: vault %q is not a readable directory", vault)
+		return fmt.Errorf("essaim emit: vault %q is not a readable directory", vault)
 	}
 
 	tools, err := resolveEmitTools(fileFlags, cfg)
@@ -78,8 +78,8 @@ func runEmit(args []string, out io.Writer) error {
 		return err
 	}
 	if len(tools) == 0 {
-		return fmt.Errorf("oikos emit: no native-file targets — pass --file name=path, set OIKOS_NATIVE_FILE_TOOLS, " +
-			"or wire a tool's native file (e.g. `oikos wire claude-code`)")
+		return fmt.Errorf("essaim emit: no native-file targets — pass --file name=path, set ESSAIM_NATIVE_FILE_TOOLS, " +
+			"or wire a tool's native file (e.g. `essaim wire claude-code`)")
 	}
 
 	// Build the index from the vault exactly as the daemon does (status-filtered
@@ -87,14 +87,14 @@ func runEmit(args []string, out io.Writer) error {
 	// never start the watcher — this is a one-shot regeneration.
 	store, err := rules.NewStore(vault)
 	if err != nil {
-		return fmt.Errorf("oikos emit: could not load vault: %w", err)
+		return fmt.Errorf("essaim emit: could not load vault: %w", err)
 	}
 
 	em := emit.New(rules.GuardConfigFromEnv(), tools)
 	em.SetDebounce(0) // synchronous: write now, then exit
 	block, results, err := em.EmitNowWithResults(store.Index())
 	if err != nil {
-		return fmt.Errorf("oikos emit: %w", err)
+		return fmt.Errorf("essaim emit: %w", err)
 	}
 
 	// Per-target summary reflecting the ACTUAL outcome (review follow-up #4): never
@@ -104,39 +104,39 @@ func runEmit(args []string, out io.Writer) error {
 	for _, r := range results {
 		switch r.Status {
 		case emit.StatusWritten:
-			fmt.Fprintf(out, "oikos: wrote %d live rule(s) into %s (%s)\n", liveCount, r.NativeFile, r.Name)
+			fmt.Fprintf(out, "essaim: wrote %d live rule(s) into %s (%s)\n", liveCount, r.NativeFile, r.Name)
 		case emit.StatusSkipped:
-			fmt.Fprintf(out, "oikos: %s (%s) already up to date — skipped (no change)\n", r.NativeFile, r.Name)
+			fmt.Fprintf(out, "essaim: %s (%s) already up to date — skipped (no change)\n", r.NativeFile, r.Name)
 		case emit.StatusRefused:
-			fmt.Fprintf(out, "oikos: REFUSED %s (%s) — the target path contains a credential pattern; not written\n", r.NativeFile, r.Name)
+			fmt.Fprintf(out, "essaim: REFUSED %s (%s) — the target path contains a credential pattern; not written\n", r.NativeFile, r.Name)
 		case emit.StatusFailed:
 			failed++
-			fmt.Fprintf(out, "oikos: FAILED to write %s (%s): %v\n", r.NativeFile, r.Name, r.Err)
+			fmt.Fprintf(out, "essaim: FAILED to write %s (%s): %v\n", r.NativeFile, r.Name, r.Err)
 		}
 	}
 	if liveCount == 0 {
-		fmt.Fprintln(out, "oikos: note — the vault has no live rules yet, so the block is empty "+
+		fmt.Fprintln(out, "essaim: note — the vault has no live rules yet, so the block is empty "+
 			"(it will fill in as you teach corrections). The fenced region is in place and will update on the next emit.")
 	}
 	if failed > 0 {
-		return fmt.Errorf("oikos emit: %d of %d target(s) failed to write", failed, len(results))
+		return fmt.Errorf("essaim emit: %d of %d target(s) failed to write", failed, len(results))
 	}
 	return nil
 }
 
-// resolveEmitVault applies the precedence: --vault, OIKOS_VAULT, config vault,
-// then ~/oikos-vault (the same default `oikos init` uses), absolutized.
+// resolveEmitVault applies the precedence: --vault, ESSAIM_VAULT, config vault,
+// then ~/essaim-vault (the same default `essaim init` uses), absolutized.
 func resolveEmitVault(vaultFlag string, cfg config.Config) string {
 	v := strings.TrimSpace(vaultFlag)
 	if v == "" {
-		v = strings.TrimSpace(os.Getenv("OIKOS_VAULT"))
+		v = strings.TrimSpace(os.Getenv("ESSAIM_VAULT"))
 	}
 	if v == "" {
 		v = strings.TrimSpace(cfg.VaultDir)
 	}
 	if v == "" {
 		if home, err := os.UserHomeDir(); err == nil {
-			v = filepath.Join(home, "oikos-vault")
+			v = filepath.Join(home, "essaim-vault")
 		}
 	}
 	if v == "" {
@@ -149,8 +149,8 @@ func resolveEmitVault(vaultFlag string, cfg config.Config) string {
 }
 
 // resolveEmitTools applies the precedence "first non-empty wins": --file flags,
-// then OIKOS_NATIVE_FILE_TOOLS, then the persisted config's native_file wired
-// tools. A SET-but-malformed OIKOS_NATIVE_FILE_TOOLS (non-empty, but no valid
+// then ESSAIM_NATIVE_FILE_TOOLS, then the persisted config's native_file wired
+// tools. A SET-but-malformed ESSAIM_NATIVE_FILE_TOOLS (non-empty, but no valid
 // `name=path` pair) does NOT fall through to config (review follow-up #3): the env
 // var was non-empty, so it wins, and an unusable value is an explicit error rather
 // than a surprising silent write to the config target.
@@ -158,12 +158,12 @@ func resolveEmitTools(fileFlags stringSlice, cfg config.Config) ([]emit.Tool, er
 	if len(fileFlags) > 0 {
 		return parseFilePairs(fileFlags), nil
 	}
-	if raw := strings.TrimSpace(os.Getenv("OIKOS_NATIVE_FILE_TOOLS")); raw != "" {
+	if raw := strings.TrimSpace(os.Getenv("ESSAIM_NATIVE_FILE_TOOLS")); raw != "" {
 		// Env is non-empty → it wins. Use it if it parses; error if it does not.
 		if env := nativeFileToolsFromEnv(); len(env) > 0 {
 			return env, nil
 		}
-		return nil, fmt.Errorf("oikos emit: OIKOS_NATIVE_FILE_TOOLS=%q is malformed "+
+		return nil, fmt.Errorf("essaim emit: ESSAIM_NATIVE_FILE_TOOLS=%q is malformed "+
 			"(expected comma-separated name=path pairs, e.g. claude-code=./CLAUDE.md); "+
 			"refusing to fall through to the configured target", raw)
 	}

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // WriteVault mirrors the pulled zone rules into <vault>/_brain/ as live .md files

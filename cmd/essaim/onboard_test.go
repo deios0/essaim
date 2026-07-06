@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
-// `oikos onboard` is the one-command setup: join bus (+optional Brain), pull the
+// `essaim onboard` is the one-command setup: join bus (+optional Brain), pull the
 // zone's Brain rules, and emit into the native file(s) — all in one go. Verifies
 // the whole chain against fake bus+brain servers writing a real AGENTS.md.
 func TestRunOnboardChainsJoinPullEmit(t *testing.T) {
@@ -28,8 +28,8 @@ func TestRunOnboardChainsJoinPullEmit(t *testing.T) {
 	defer brain.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	_ = os.MkdirAll(filepath.Join(dir, "vault"), 0o755)
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("key\n"), 0o600)
@@ -48,8 +48,8 @@ func TestRunOnboardChainsJoinPullEmit(t *testing.T) {
 	}
 	got, _ := os.ReadFile(target)
 	s := string(got)
-	if !strings.Contains(s, "oikos:rules:begin") {
-		t.Fatalf("target has no oikos block:\n%s", s)
+	if !strings.Contains(s, "essaim:rules:begin") {
+		t.Fatalf("target has no essaim block:\n%s", s)
 	}
 	if !strings.Contains(s, "always postgres") {
 		t.Fatalf("brain zone rule not emitted into the target:\n%s", s)
@@ -61,7 +61,7 @@ func TestRunOnboardChainsJoinPullEmit(t *testing.T) {
 
 // onboard without a bus endpoint errors (nothing to set up).
 func TestRunOnboardRequiresEndpoint(t *testing.T) {
-	t.Setenv("OIKOS_CONFIG", filepath.Join(t.TempDir(), "c.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(t.TempDir(), "c.json"))
 	var out bytes.Buffer
 	if err := runOnboard([]string{"--file", "codex=/tmp/x"}, &out); err == nil {
 		t.Fatal("onboard with no --endpoint returned nil; want an error")
@@ -78,8 +78,8 @@ func TestRunOnboardBrainOnly(t *testing.T) {
 	defer brain.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	_ = os.MkdirAll(filepath.Join(dir, "vault"), 0o755)
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("key\n"), 0o600)
@@ -102,14 +102,14 @@ func TestRunOnboardBrainOnly(t *testing.T) {
 
 // onboard with NEITHER bus nor brain errors.
 func TestRunOnboardRequiresBusOrBrain(t *testing.T) {
-	t.Setenv("OIKOS_CONFIG", filepath.Join(t.TempDir(), "c.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(t.TempDir(), "c.json"))
 	var out bytes.Buffer
 	if err := runOnboard([]string{"--file", "codex=/tmp/x"}, &out); err == nil {
 		t.Fatal("onboard with no bus and no brain returned nil; want an error")
 	}
 }
 
-// P1 regression: on a FRESH machine (no vault configured, no ~/oikos-vault),
+// P1 regression: on a FRESH machine (no vault configured, no ~/essaim-vault),
 // bus-only onboard must still create+record a vault and emit without failing.
 func TestRunOnboardFreshMachineNoVault(t *testing.T) {
 	bus := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -119,9 +119,9 @@ func TestRunOnboardFreshMachineNoVault(t *testing.T) {
 	defer bus.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("HOME", dir)       // ~/oikos-vault resolves under the temp HOME
-	t.Setenv("OIKOS_VAULT", "") // nothing preconfigured
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("HOME", dir)        // ~/essaim-vault resolves under the temp HOME
+	t.Setenv("ESSAIM_VAULT", "") // nothing preconfigured
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("k\n"), 0o600)
 	target := filepath.Join(dir, "AGENTS.md")
@@ -150,9 +150,9 @@ func TestRunOnboardBusOnlyClearsStaleBrainMirror(t *testing.T) {
 	defer bus.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	vault := filepath.Join(dir, "vault")
-	t.Setenv("OIKOS_VAULT", vault)
+	t.Setenv("ESSAIM_VAULT", vault)
 	_ = os.MkdirAll(vault, 0o755)
 	// Simulate a stale mirror from a previous Brain onboard.
 	_ = os.MkdirAll(filepath.Join(vault, "_brain"), 0o755)
@@ -183,7 +183,7 @@ func TestRunOnboardPersistsAbsoluteVault(t *testing.T) {
 	}))
 	defer brainS.Close()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	t.Chdir(dir)
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("k\n"), 0o600)
@@ -207,8 +207,8 @@ func TestRunOnboardFailedBrainLeavesNoJoin(t *testing.T) {
 	}))
 	defer brainS.Close()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("bad\n"), 0o600)
 	var out bytes.Buffer
@@ -229,8 +229,8 @@ func TestRunOnboardBusOnlyClearsStoredBrainJoin(t *testing.T) {
 	}))
 	defer busS.Close()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	_ = os.MkdirAll(filepath.Join(dir, "vault"), 0o755)
 	_ = config.Save(config.Config{Brain: &config.BrainJoin{URL: "http://old", KeyFile: "/k"}})
 	kf := filepath.Join(dir, "k")
@@ -248,7 +248,7 @@ func TestRunOnboardBusOnlyClearsStoredBrainJoin(t *testing.T) {
 }
 
 // onboard emits into the exact --file target (first write). Continuous
-// maintenance is a separate `oikos wire` step, so onboard does NOT auto-wire
+// maintenance is a separate `essaim wire` step, so onboard does NOT auto-wire
 // (avoids reimplementing wire's channel/identity normalization).
 func TestRunOnboardEmitsIntoFileTarget(t *testing.T) {
 	busS := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -257,8 +257,8 @@ func TestRunOnboardEmitsIntoFileTarget(t *testing.T) {
 	}))
 	defer busS.Close()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	_ = os.MkdirAll(filepath.Join(dir, "vault"), 0o755)
 	kf := filepath.Join(dir, "k")
 	_ = os.WriteFile(kf, []byte("k\n"), 0o600)
@@ -269,7 +269,7 @@ func TestRunOnboardEmitsIntoFileTarget(t *testing.T) {
 		t.Fatalf("onboard: %v", err)
 	}
 	got, _ := os.ReadFile(target)
-	if !strings.Contains(string(got), "oikos:rules:begin") {
+	if !strings.Contains(string(got), "essaim:rules:begin") {
 		t.Fatalf("onboard did not emit the block into the target:\n%s", string(got))
 	}
 	if !strings.Contains(string(got), "# m") {
@@ -280,7 +280,7 @@ func TestRunOnboardEmitsIntoFileTarget(t *testing.T) {
 // P2 regression: a malformed --file fails EARLY (before any join/commit).
 func TestRunOnboardMalformedFileFailsEarly(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	var out bytes.Buffer
 	err := runOnboard([]string{"--endpoint", "http://unused", "--file", "no-equals-sign"}, &out)
 	if err == nil {
@@ -301,8 +301,8 @@ func TestRunOnboardAbsolutizesKeyFile(t *testing.T) {
 	}))
 	defer busS.Close()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
-	t.Setenv("OIKOS_VAULT", filepath.Join(dir, "vault"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_VAULT", filepath.Join(dir, "vault"))
 	_ = os.MkdirAll(filepath.Join(dir, "vault"), 0o755)
 	t.Chdir(dir)
 	_ = os.WriteFile(filepath.Join(dir, "z.key"), []byte("k\n"), 0o600)

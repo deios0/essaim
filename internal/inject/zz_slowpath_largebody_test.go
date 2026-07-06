@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // RESIDUAL slow/stripped-path overrun (follow-up to P0-1).
 //
 // P0-1 fixed the FAST path (no prior block → single-copy headInject). But when the
-// inject INPUT already carries a PRIOR oikos block — which happens in normal use
+// inject INPUT already carries a PRIOR essaim block — which happens in normal use
 // because the NativeFileEmitter writes a block into CLAUDE.md and the tool then
 // sends that file's content back as context — the code takes the STRIP-then-rebuild
 // path. Before this fix that path did a ~2-copy doubling-buffer rewrite
@@ -21,13 +21,13 @@ import (
 // blows the 15ms budget → safeBuild fail-opens to verbatim → the moat silently
 // disappears on exactly the emitter→input→strip round-trip.
 //
-// This asserts: a ~5MB body that ALREADY contains a prior oikos block (forces the
+// This asserts: a ~5MB body that ALREADY contains a prior essaim block (forces the
 // strip path) injects the fresh block in < 15ms AND byte-exact (old block removed,
 // fresh block at index 0, every other message verbatim).
 func TestMultiMBStrippedPayloadInjectsUnderBudget(t *testing.T) {
-	// A prior oikos block exactly as the emitter would have written it inbound
+	// A prior essaim block exactly as the emitter would have written it inbound
 	// (instruction role, sentinel-fenced, payload-agnostic). It MUST be recognized
-	// by isOikosBlock and stripped → forces the SLOW path.
+	// by isEssaimBlock and stripped → forces the SLOW path.
 	priorBlock := `{"role":"system","content":` + jsonStr(begin+"\nold stale rule body\n"+end) + `}`
 
 	huge := strings.Repeat("x", 5*1024*1024) // 5MB user content
@@ -35,7 +35,7 @@ func TestMultiMBStrippedPayloadInjectsUnderBudget(t *testing.T) {
 	plainSys := `{"role":"system","content":"sys"}`
 	asstMsg := `{"role":"assistant","content":"prior answer"}`
 
-	// Order: prior oikos block, then a plain system, a huge user, an assistant.
+	// Order: prior essaim block, then a plain system, a huge user, an assistant.
 	// After stripping the prior block, three client messages survive and must
 	// pass through byte-identically; the fresh block leads at index 0.
 	body := []byte(`{"model":"gpt-4o","messages":[` +
@@ -68,12 +68,12 @@ func TestMultiMBStrippedPayloadInjectsUnderBudget(t *testing.T) {
 	if n := countBeginInInstruction(t, res.Body); n != 1 {
 		t.Fatalf("want exactly 1 block (old stripped, fresh injected), got %d", n)
 	}
-	// The old stale body must be gone; the snapshot must be oikos-free.
+	// The old stale body must be gone; the snapshot must be essaim-free.
 	if strings.Contains(string(res.Body), "old stale rule body") {
 		t.Fatalf("stale prior-block body must be stripped out")
 	}
 	if strings.Contains(string(res.Snapshot.CleanMessagesJSON), begin) {
-		t.Fatalf("capture snapshot must be oikos-free, contains sentinel")
+		t.Fatalf("capture snapshot must be essaim-free, contains sentinel")
 	}
 
 	// The fresh block must lead at array index 0.
@@ -111,7 +111,7 @@ func summarizeRoles(out []struct{ Role, Content string }) []string {
 	return r
 }
 
-// Strip-path boundary: the body was ONLY a prior oikos block (so after stripping,
+// Strip-path boundary: the body was ONLY a prior essaim block (so after stripping,
 // the surviving `clean` slice is EMPTY) AND a match exists. headInjectStripped
 // must emit a valid JSON array `[block]` (the fresh block alone, no trailing
 // comma, no dangling element) — the same output the prior spliceElement produced.

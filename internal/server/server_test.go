@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 // Fix #6 [MED latent]: New() must default the provider so a server that never had

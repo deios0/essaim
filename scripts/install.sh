@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# install.sh — the `curl -fsSL https://get.oikos.sh | sh` installer for oikos.
+# install.sh — the `curl -fsSL https://get.essaim.sh | sh` installer for essaim.
 #
 # Its ONLY job: detect the platform, download the right signed static binary,
 # verify it, place it on the user's PATH, and print the next step. It NEVER
@@ -11,16 +11,16 @@
 # The whole body is wrapped in main(){…};main so a dropped connection mid-pipe
 # can't half-execute a destructive partial line.
 #
-# Offline-testable: set OIKOS_INSTALL_DRYRUN=1 to print every step (detect +
+# Offline-testable: set ESSAIM_INSTALL_DRYRUN=1 to print every step (detect +
 # resolved URL + target path) and exit 0 WITHOUT any network or filesystem write.
 #
 # Overridable knobs (env):
-#   OIKOS_INSTALL_DRYRUN=1     plan only; no download, no write
-#   OIKOS_VERSION=vX.Y.Z       which release to fetch (default: latest)
-#   OIKOS_INSTALL_DIR=<dir>    where to place the binary (default: a PATH dir
+#   ESSAIM_INSTALL_DRYRUN=1     plan only; no download, no write
+#   ESSAIM_VERSION=vX.Y.Z       which release to fetch (default: latest)
+#   ESSAIM_INSTALL_DIR=<dir>    where to place the binary (default: a PATH dir
 #                              that needs no sudo, e.g. ~/.local/bin)
-#   OIKOS_BASE_URL=<url>       release host base (default: the public releases URL)
-#   OIKOS_OS / OIKOS_ARCH      override detection (testing)
+#   ESSAIM_BASE_URL=<url>       release host base (default: the public releases URL)
+#   ESSAIM_OS / ESSAIM_ARCH      override detection (testing)
 
 set -eu
 
@@ -28,12 +28,12 @@ main() {
 	# --- configuration --------------------------------------------------------
 	# Placeholder public release host. The real value is set at release time; the
 	# script is structured so it is the single source of the download URL.
-	BASE_URL="${OIKOS_BASE_URL:-https://github.com/deios0/oikos/releases}"
-	VERSION="${OIKOS_VERSION:-latest}"
-	DRYRUN="${OIKOS_INSTALL_DRYRUN:-0}"
+	BASE_URL="${ESSAIM_BASE_URL:-https://github.com/deios0/essaim/releases}"
+	VERSION="${ESSAIM_VERSION:-latest}"
+	DRYRUN="${ESSAIM_INSTALL_DRYRUN:-0}"
 
 	# --- detect OS ------------------------------------------------------------
-	os="${OIKOS_OS:-}"
+	os="${ESSAIM_OS:-}"
 	if [ -z "$os" ]; then
 		uname_s="$(uname -s 2>/dev/null || echo unknown)"
 		case "$uname_s" in
@@ -47,7 +47,7 @@ main() {
 	fi
 
 	# --- detect arch ----------------------------------------------------------
-	arch="${OIKOS_ARCH:-}"
+	arch="${ESSAIM_ARCH:-}"
 	if [ -z "$arch" ]; then
 		uname_m="$(uname -m 2>/dev/null || echo unknown)"
 		case "$uname_m" in
@@ -62,7 +62,7 @@ main() {
 	# --- resolve artifact + URL ----------------------------------------------
 	ext=""
 	[ "$os" = "windows" ] && ext=".exe"
-	asset="oikos_${os}_${arch}${ext}"
+	asset="essaim_${os}_${arch}${ext}"
 
 	if [ "$VERSION" = "latest" ]; then
 		url="${BASE_URL}/latest/download/${asset}"
@@ -71,23 +71,23 @@ main() {
 	fi
 
 	# --- resolve install dir (no sudo) ---------------------------------------
-	bindir="${OIKOS_INSTALL_DIR:-}"
+	bindir="${ESSAIM_INSTALL_DIR:-}"
 	if [ -z "$bindir" ]; then
 		bindir="$(default_bindir)"
 	fi
-	target="${bindir}/oikos${ext}"
+	target="${bindir}/essaim${ext}"
 
 	# --- dry run: plan only, no side effects ---------------------------------
 	if [ "$DRYRUN" = "1" ]; then
-		echo "oikos installer (dry run — no download, no write)"
+		echo "essaim installer (dry run — no download, no write)"
 		echo "  os:        $os"
 		echo "  arch:      $arch"
 		echo "  version:   $VERSION"
 		echo "  asset:     $asset"
 		echo "  url:       $url"
 		echo "  target:    $target"
-		echo "  next step: oikos init   then oikos emit   (writes your AGENTS.md; no proxy needed)"
-		echo "  live mode: oikos serve  then open http://127.0.0.1:4141/setup   (optional)"
+		echo "  next step: essaim init   then essaim emit   (writes your AGENTS.md; no proxy needed)"
+		echo "  live mode: essaim serve  then open http://127.0.0.1:4141/setup   (optional)"
 		return 0
 	fi
 
@@ -98,11 +98,11 @@ main() {
 
 	mkdir -p "$bindir"
 
-	tmp="$(mktemp "${TMPDIR:-/tmp}/oikos-XXXXXX")"
+	tmp="$(mktemp "${TMPDIR:-/tmp}/essaim-XXXXXX")"
 	# shellcheck disable=SC2064
 	trap "rm -f '$tmp'" EXIT INT TERM
 
-	echo "oikos: downloading $asset ..."
+	echo "essaim: downloading $asset ..."
 	# -f fail on HTTP error, -S show errors, -s silent progress, -L follow redirects.
 	curl -fSsL "$url" -o "$tmp"
 
@@ -116,17 +116,17 @@ main() {
 	mv "$tmp" "$target"
 	trap - EXIT INT TERM
 
-	echo "oikos: installed to $target"
+	echo "essaim: installed to $target"
 	case ":${PATH}:" in
 	*":${bindir}:"*) : ;; # already on PATH
-	*) echo "oikos: add $bindir to your PATH (e.g. export PATH=\"$bindir:\$PATH\")" ;;
+	*) echo "essaim: add $bindir to your PATH (e.g. export PATH=\"$bindir:\$PATH\")" ;;
 	esac
 	echo ""
-	echo "Next:  oikos init     # seed a vault + a starter rule"
-	echo "       oikos emit     # write the ranked block into your AGENTS.md (no proxy needed)"
+	echo "Next:  essaim init     # seed a vault + a starter rule"
+	echo "       essaim emit     # write the ranked block into your AGENTS.md (no proxy needed)"
 	echo ""
 	echo "Optional live mode (real-time correction capture via the proxy):"
-	echo "       oikos serve    # then open http://127.0.0.1:4141/setup"
+	echo "       essaim serve    # then open http://127.0.0.1:4141/setup"
 }
 
 # default_bindir picks a PATH directory that needs NO sudo, preferring the XDG /
@@ -158,26 +158,26 @@ verify_checksum() {
 	elif command -v shasum >/dev/null 2>&1; then
 		_sumcmd="shasum -a 256"
 	else
-		echo "oikos: no sha256 tool found; skipping checksum verification"
+		echo "essaim: no sha256 tool found; skipping checksum verification"
 		return 1
 	fi
 
 	_sums="$(curl -fSsL "$_sumsurl" 2>/dev/null || true)"
 	if [ -z "$_sums" ]; then
-		echo "oikos: SHA256SUMS not published for this release; skipping checksum verification"
+		echo "essaim: SHA256SUMS not published for this release; skipping checksum verification"
 		return 1
 	fi
 
 	_want="$(echo "$_sums" | grep " ${_asset}\$" | awk '{print $1}' | head -n1)"
 	if [ -z "$_want" ]; then
-		echo "oikos: $_asset not listed in SHA256SUMS; skipping checksum verification"
+		echo "essaim: $_asset not listed in SHA256SUMS; skipping checksum verification"
 		return 1
 	fi
 	_got="$($_sumcmd "$_file" | awk '{print $1}')"
 	if [ "$_want" != "$_got" ]; then
 		fail "checksum mismatch for $_asset (expected $_want, got $_got) — refusing to install"
 	fi
-	echo "oikos: checksum verified"
+	echo "essaim: checksum verified"
 	return 0
 }
 
@@ -186,7 +186,7 @@ require() {
 }
 
 fail() {
-	echo "oikos install error: $*" >&2
+	echo "essaim install error: $*" >&2
 	exit 1
 }
 

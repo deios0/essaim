@@ -19,7 +19,7 @@ const InboxDir = "_inbox"
 // draft — current or future (a new sidecar file is covered automatically). The
 // `!.gitignore` un-ignore keeps the marker itself trackable (so the protection is
 // visible/portable), without listing each file pattern by name.
-const inboxGitignore = "# oikos: local, ephemeral-hot working area — never commit.\n" +
+const inboxGitignore = "# essaim: local, ephemeral-hot working area — never commit.\n" +
 	"# Holds unreviewed draft rules and the .counts.json reinforce-counter sidecar.\n" +
 	"*\n" +
 	"!.gitignore\n"

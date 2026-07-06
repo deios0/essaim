@@ -8,7 +8,7 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-// Store is the minimal credential-store interface oikos uses to read/write
+// Store is the minimal credential-store interface essaim uses to read/write
 // secrets (the BYOK key, the loopback token). It is satisfied by Keyring and
 // EnvOrKeyring (and by in-test fakes).
 type Store interface {
@@ -50,7 +50,7 @@ func (k Keyring) Delete(key string) error {
 type EnvOrKeyring struct {
 	Keyring Keyring
 	// EnvVars maps a logical key (e.g. "openrouter-key") to the env var name
-	// (e.g. "OIKOS_OPENROUTER_KEY") that overrides it.
+	// (e.g. "ESSAIM_OPENROUTER_KEY") that overrides it.
 	EnvVars map[string]string
 	// getenv is injectable for tests; defaults to os.Getenv.
 	getenv func(string) string

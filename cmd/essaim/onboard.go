@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/brain"
-	"oikos/internal/bus"
-	"oikos/internal/config"
+	"essaim/internal/brain"
+	"essaim/internal/bus"
+	"essaim/internal/config"
 )
 
 // runOnboard is the ONE-command setup for a new participant: join the bus (and/or
@@ -28,7 +28,7 @@ import (
 // migrates a project between bus/Brain/both, and a transient failure never leaves
 // a half-configured install or repoints an existing vault.
 //
-//	oikos onboard [--endpoint <bus> --key-file <k>] \
+//	essaim onboard [--endpoint <bus> --key-file <k>] \
 //	              [--brain-endpoint <b> --brain-key-file <bk>] \
 //	              [--zone <z>] [--project <p>] [--vault <dir>] \
 //	              --file <tool>=<path> [--file ...]
@@ -41,7 +41,7 @@ func runOnboard(args []string, out io.Writer) error {
 	brainEndpoint := fs.String("brain-endpoint", "", "Brain (rule-store) URL (omit for a bus-only project)")
 	brainKeyFile := fs.String("brain-key-file", "", "Brain zone key file")
 	project := fs.String("project", "", "project tag for Brain rules (default: current directory name)")
-	vaultFlag := fs.String("vault", "", "vault directory (default: OIKOS_VAULT / configured vault / ~/oikos-vault)")
+	vaultFlag := fs.String("vault", "", "vault directory (default: ESSAIM_VAULT / configured vault / ~/essaim-vault)")
 	noVerify := fs.Bool("no-verify", false, "skip the live key check (offline join)")
 	var fileFlags stringSlice
 	fs.Var(&fileFlags, "file", "native-file target as name=path (repeatable)")
@@ -54,7 +54,7 @@ func runOnboard(args []string, out io.Writer) error {
 	zoneLabel := strings.TrimSpace(*zone)
 	// Per-project flexibility: a project may be in the bus, in the Brain, or both.
 	if busURL == "" && brainURL == "" {
-		return fmt.Errorf("oikos onboard: give at least one of --endpoint (bus) or --brain-endpoint (rule store)")
+		return fmt.Errorf("essaim onboard: give at least one of --endpoint (bus) or --brain-endpoint (rule store)")
 	}
 
 	// Resolve native-file targets up front (before any network work or commit).
@@ -64,7 +64,7 @@ func runOnboard(args []string, out io.Writer) error {
 	// parse (a partially-malformed list must not silently drop a mistyped target).
 	// Absolute paths so a later emit/serve from another directory keeps the file.
 	if len(fileFlags) == 0 {
-		return fmt.Errorf("oikos onboard: at least one --file name=path is required (e.g. --file claude-code=./CLAUDE.md)")
+		return fmt.Errorf("essaim onboard: at least one --file name=path is required (e.g. --file claude-code=./CLAUDE.md)")
 	}
 	type fileTarget struct{ name, path string }
 	var fileTools []fileTarget
@@ -72,7 +72,7 @@ func runOnboard(args []string, out io.Writer) error {
 		name, path, ok := strings.Cut(strings.TrimSpace(f), "=")
 		name, path = strings.TrimSpace(name), strings.TrimSpace(path)
 		if !ok || name == "" || path == "" {
-			return fmt.Errorf("oikos onboard: malformed --file %q (want name=path, e.g. claude-code=./CLAUDE.md)", f)
+			return fmt.Errorf("essaim onboard: malformed --file %q (want name=path, e.g. claude-code=./CLAUDE.md)", f)
 		}
 		if abs, aerr := filepath.Abs(path); aerr == nil {
 			path = abs
@@ -88,14 +88,14 @@ func runOnboard(args []string, out io.Writer) error {
 	// Resolve the vault (absolute — a relative path saved verbatim would resolve
 	// differently when serve/sync run from another directory). Create the dir now
 	// (harmless on later failure); config.VaultDir is only PERSISTED at the end.
-	vault := firstNonEmpty(strings.TrimSpace(*vaultFlag), strings.TrimSpace(os.Getenv("OIKOS_VAULT")), strings.TrimSpace(cfg.VaultDir))
+	vault := firstNonEmpty(strings.TrimSpace(*vaultFlag), strings.TrimSpace(os.Getenv("ESSAIM_VAULT")), strings.TrimSpace(cfg.VaultDir))
 	if vault == "" {
 		if home, herr := os.UserHomeDir(); herr == nil {
-			vault = filepath.Join(home, "oikos-vault")
+			vault = filepath.Join(home, "essaim-vault")
 		}
 	}
 	if vault == "" {
-		return fmt.Errorf("oikos onboard: could not resolve a vault directory — pass --vault")
+		return fmt.Errorf("essaim onboard: could not resolve a vault directory — pass --vault")
 	}
 	if abs, aerr := filepath.Abs(vault); aerr == nil {
 		vault = abs
@@ -189,7 +189,7 @@ func runOnboard(args []string, out io.Writer) error {
 	// EXACTLY this onboard's membership (bus iff --endpoint, Brain iff
 	// --brain-endpoint) so a rerun cleanly migrates a project between bus/Brain/both.
 	// Native-file targets are intentionally NOT auto-wired here — persistent wiring
-	// (with its channel/identity normalization + unwire support) is `oikos wire`.
+	// (with its channel/identity normalization + unwire support) is `essaim wire`.
 	cfg, err = config.Load()
 	if err != nil {
 		return err
@@ -206,12 +206,12 @@ func runOnboard(args []string, out io.Writer) error {
 		if z == "" {
 			z = "the zone your key enforces"
 		}
-		fmt.Fprintf(out, "oikos: joined bus %s (%s, server-enforced).\n", busURL, z)
+		fmt.Fprintf(out, "essaim: joined bus %s (%s, server-enforced).\n", busURL, z)
 	}
 	if brainJoin != nil {
-		fmt.Fprintf(out, "oikos: pulled %d Brain zone rule(s) into the vault mirror.\n", len(brainRules))
+		fmt.Fprintf(out, "essaim: pulled %d Brain zone rule(s) into the vault mirror.\n", len(brainRules))
 	}
-	fmt.Fprintln(out, "oikos: onboarded. To keep these files updated automatically, run `oikos wire <tool>`.")
+	fmt.Fprintln(out, "essaim: onboarded. To keep these files updated automatically, run `essaim wire <tool>`.")
 	fmt.Fprintln(out, "(Bridge, if you use it, is wired separately as an MCP — it can be used on any project.)")
 	return nil
 }

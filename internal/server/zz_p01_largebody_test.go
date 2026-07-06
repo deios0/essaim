@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // raceEnabledServer mirrors the inject package's build-tag flag: under -race the
@@ -17,7 +17,7 @@ import (
 // P0-1 regression: the WHOLE request-side transform (the server's buildOnce:
 // LastUserMessage parse + Build parse + splice) must inject a ~5MB resent
 // history UNDER the 15ms hot-path deadline, AND do so byte-exactly (every
-// original message survives verbatim, exactly one oikos block prepended). Before
+// original message survives verbatim, exactly one essaim block prepended). Before
 // the fix the body was parsed twice and copied twice (~21.5ms / ~8.5x body in
 // allocs at 5MB) → the transform overran the 15ms deadline and silently failed
 // open (zero injection) exactly in long agent sessions.
@@ -65,12 +65,12 @@ func TestP01LargeBodyInjectsUnderDeadline(t *testing.T) {
 	t.Logf("P0-1: 5MB buildOnce transform = %v", elapsed)
 
 	// Byte-exact correctness: every original message survives verbatim and
-	// exactly one oikos block is prepended.
+	// exactly one essaim block is prepended.
 	if !strings.Contains(string(out), huge) {
 		t.Fatalf("P0-1: the 5MB user content must survive byte-identical")
 	}
-	if got := strings.Count(string(out), rules.OIKOS_BEGIN); got != 1 {
-		t.Fatalf("P0-1: want exactly 1 oikos block, got %d", got)
+	if got := strings.Count(string(out), rules.ESSAIM_BEGIN); got != 1 {
+		t.Fatalf("P0-1: want exactly 1 essaim block, got %d", got)
 	}
 	// The output must remain valid JSON and preserve the original messages.
 	var req struct {
@@ -86,7 +86,7 @@ func TestP01LargeBodyInjectsUnderDeadline(t *testing.T) {
 	if req.Model != "gpt-4o" {
 		t.Fatalf("P0-1: model field must be preserved, got %q", req.Model)
 	}
-	// messages = [oikos-block, system, user(huge), assistant, user] = 5.
+	// messages = [essaim-block, system, user(huge), assistant, user] = 5.
 	if len(req.Messages) != 5 {
 		t.Fatalf("P0-1: want 5 messages (block + 4 originals), got %d", len(req.Messages))
 	}

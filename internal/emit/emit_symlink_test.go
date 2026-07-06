@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // symlinkOrSkip creates newname -> oldname, skipping the test on a host that can't
@@ -59,7 +59,7 @@ func TestEmitThroughSymlinkPreservesLinkAndWritesTarget(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(got)
-	if !strings.Contains(s, rules.OIKOS_BEGIN) || !strings.Contains(s, "Always use PostgreSQL") {
+	if !strings.Contains(s, rules.ESSAIM_BEGIN) || !strings.Contains(s, "Always use PostgreSQL") {
 		t.Fatalf("the block must be written THROUGH the symlink into the real target:\n%s", s)
 	}
 	if !strings.Contains(s, "user content") {
@@ -76,7 +76,7 @@ func TestEmitThroughSymlinkPreservesLinkAndWritesTarget(t *testing.T) {
 	}
 }
 
-// P2-5 (ii): the .oikos.bak must land at the LOGICAL (symlink) path, because
+// P2-5 (ii): the .essaim.bak must land at the LOGICAL (symlink) path, because
 // wire/unwire snapshot and restore at that path. A backup written at the RESOLVED
 // real path would be orphaned (unwire would never find it → stale/leftover backup).
 func TestEmitThroughSymlinkBackupAtLogicalPath(t *testing.T) {
@@ -94,8 +94,8 @@ func TestEmitThroughSymlinkBackupAtLogicalPath(t *testing.T) {
 		t.Fatalf("emit: %v", err)
 	}
 
-	logicalBak := link + ".oikos.bak"
-	realBak := real + ".oikos.bak"
+	logicalBak := link + ".essaim.bak"
+	realBak := real + ".essaim.bak"
 	if _, err := os.Stat(logicalBak); err != nil {
 		t.Fatalf("the backup must be at the LOGICAL (symlink) path %s where unwire looks: %v", logicalBak, err)
 	}
@@ -104,7 +104,7 @@ func TestEmitThroughSymlinkBackupAtLogicalPath(t *testing.T) {
 	}
 	// The backup must be the PRISTINE original (pre-block) content.
 	bak, _ := os.ReadFile(logicalBak)
-	if strings.Contains(string(bak), rules.OIKOS_BEGIN) {
+	if strings.Contains(string(bak), rules.ESSAIM_BEGIN) {
 		t.Fatalf("the backup must be the pristine pre-block original, not a with-block copy:\n%s", bak)
 	}
 	if !strings.Contains(string(bak), "user content") {
@@ -138,7 +138,7 @@ func TestEmitThroughDanglingSymlinkWritesLogicalPathUnwireSafe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("emit must write the block at the logical path: %v", err)
 	}
-	if !strings.Contains(string(got), rules.OIKOS_BEGIN) {
+	if !strings.Contains(string(got), rules.ESSAIM_BEGIN) {
 		t.Fatalf("the block must be written at the logical path:\n%s", got)
 	}
 	// The block must NOT have been materialized at the (missing) readlink target —

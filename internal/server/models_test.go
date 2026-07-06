@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/upstream"
+	"essaim/internal/upstream"
 )
 
 func TestModelsProxyCaches60s(t *testing.T) {

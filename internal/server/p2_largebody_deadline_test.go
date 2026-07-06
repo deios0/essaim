@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // P2-1a: the intercept deadline must SCALE modestly with body size so a multi-MB
 // resent history still injects. A flat 15ms fails open (zero injection) exactly
-// when the session is largest — the opposite of what oikos should do (upstream RTT
+// when the session is largest — the opposite of what essaim should do (upstream RTT
 // dwarfs the extra few ms). scaleDeadline(base, bodyLen) grows the budget a few
 // ms/MB, capped ~100ms.
 func TestScaleDeadlineGrowsWithBodySize(t *testing.T) {
@@ -69,7 +69,7 @@ func TestLargeBodyStillInjectsWithScaledDeadline(t *testing.T) {
 	if berr != nil {
 		t.Fatalf("a ~9MB body under the scaled deadline must inject, got err %v", berr)
 	}
-	if strings.Count(string(out), rules.OIKOS_BEGIN) != 1 {
+	if strings.Count(string(out), rules.ESSAIM_BEGIN) != 1 {
 		t.Fatalf("scaled deadline must let the large body inject exactly 1 block")
 	}
 }

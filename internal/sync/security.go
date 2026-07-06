@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"oikos/internal/extract"
-	"oikos/internal/rules"
+	"essaim/internal/extract"
+	"essaim/internal/rules"
 )
 
 // This file holds the SECURITY CONTRACT of the sync primitive — the seed of the
@@ -57,26 +57,26 @@ var scpLikeRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*@[A-Za-z0-9][A-Za
 func validateRemoteURL(remote string) error {
 	r := remote // do NOT trim: leading whitespace before a `-` is itself an attack tell
 	if r == "" {
-		return fmt.Errorf("oikos sync: empty git remote")
+		return fmt.Errorf("essaim sync: empty git remote")
 	}
 	if strings.ContainsAny(r, " \t\r\n") {
-		return fmt.Errorf("oikos sync: remote %q contains whitespace (rejected — possible argument injection)", remote)
+		return fmt.Errorf("essaim sync: remote %q contains whitespace (rejected — possible argument injection)", remote)
 	}
 	if strings.HasPrefix(r, "-") {
-		return fmt.Errorf("oikos sync: remote %q starts with '-' (rejected — git would read it as an option)", remote)
+		return fmt.Errorf("essaim sync: remote %q starts with '-' (rejected — git would read it as an option)", remote)
 	}
 	// Scheme form: scheme://...
 	if i := strings.Index(r, "://"); i >= 0 {
 		scheme := strings.ToLower(r[:i])
 		if !allowedSchemes[scheme] {
-			return fmt.Errorf("oikos sync: remote scheme %q is not allowed (use https/ssh/git or a local path)", scheme)
+			return fmt.Errorf("essaim sync: remote scheme %q is not allowed (use https/ssh/git or a local path)", scheme)
 		}
 		return nil
 	}
 	// A `scheme::` transport (e.g. ext::, fd::, file::) — never allowed: ext:: runs
 	// an arbitrary command. Any `word::` prefix is a git transport helper.
 	if transportHelperRe.MatchString(r) {
-		return fmt.Errorf("oikos sync: remote %q uses a git transport helper (rejected — possible command execution)", remote)
+		return fmt.Errorf("essaim sync: remote %q uses a git transport helper (rejected — possible command execution)", remote)
 	}
 	// scp-like ssh: user@host:path
 	if scpLikeRe.MatchString(r) {
@@ -85,7 +85,7 @@ func validateRemoteURL(remote string) error {
 	// A bare local path. It must not contain a `:` that could be misread as a
 	// scheme/host separator (a `:` here is already handled by the scp-like branch).
 	if strings.Contains(r, ":") {
-		return fmt.Errorf("oikos sync: remote %q is not a recognized remote form (use https/ssh/git, git@host:path, or a local path)", remote)
+		return fmt.Errorf("essaim sync: remote %q is not a recognized remote form (use https/ssh/git, git@host:path, or a local path)", remote)
 	}
 	return nil
 }
@@ -105,16 +105,16 @@ var branchRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._/-]*$`)
 // range), and the special ref characters are all rejected.
 func validateBranch(branch string) error {
 	if branch == "" {
-		return fmt.Errorf("oikos sync: empty branch")
+		return fmt.Errorf("essaim sync: empty branch")
 	}
 	if strings.HasPrefix(branch, "-") {
-		return fmt.Errorf("oikos sync: branch %q starts with '-' (rejected — git would read it as an option)", branch)
+		return fmt.Errorf("essaim sync: branch %q starts with '-' (rejected — git would read it as an option)", branch)
 	}
 	if strings.Contains(branch, "..") {
-		return fmt.Errorf("oikos sync: branch %q contains '..' (rejected — not a valid ref name)", branch)
+		return fmt.Errorf("essaim sync: branch %q contains '..' (rejected — not a valid ref name)", branch)
 	}
 	if !branchRe.MatchString(branch) {
-		return fmt.Errorf("oikos sync: branch %q is not a valid ref name (allowed: letters, digits, . _ - /)", branch)
+		return fmt.Errorf("essaim sync: branch %q is not a valid ref name (allowed: letters, digits, . _ - /)", branch)
 	}
 	return nil
 }

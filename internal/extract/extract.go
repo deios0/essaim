@@ -9,20 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // errCredentialBody is returned by writeDraft when a private-key marker survived
 // redaction (P1-b): the body must NEVER be persisted. Process maps it to a clean
 // "rejected" Result, not a draft.
-var errCredentialBody = errors.New("oikos: credential body — refusing to write draft")
+var errCredentialBody = errors.New("essaim: credential body — refusing to write draft")
 
 // M3 constants (spec §2.1).
 const (
-	OIKOS_T1_FLOOR    = 0.45           // classify_quality score floor to stage a T1 draft
-	OIKOS_T1_PREF_MIN = 1              // M3-R5: ALSO require >=1 preference hit
-	OIKOS_DRAFT_DIR   = rules.InboxDir // drafts (status:draft) — NEVER indexed, NEVER emitted; single source of truth
-	OIKOS_ACTIVE_DIR  = "remembered"
+	ESSAIM_T1_FLOOR    = 0.45           // classify_quality score floor to stage a T1 draft
+	ESSAIM_T1_PREF_MIN = 1              // M3-R5: ALSO require >=1 preference hit
+	ESSAIM_DRAFT_DIR   = rules.InboxDir // drafts (status:draft) — NEVER indexed, NEVER emitted; single source of truth
+	ESSAIM_ACTIVE_DIR  = "remembered"
 )
 
 // T1DedupWindow is how long an identical T1 correction is treated as a
@@ -42,7 +42,7 @@ var sigilTokens = []string{"/remember", "/rule", "@rule"}
 // Exchange is the extractor's input: the user correction text (the newest user
 // turn's message) paired with the prior assistant answer, plus the lossy flag
 // (M3-R11) and the per-turn user lines for the sigil scan. Built off the hot
-// path from the M2 Snapshot.CleanMessagesJSON (oikos-free, never the injected
+// path from the M2 Snapshot.CleanMessagesJSON (essaim-free, never the injected
 // array) + the reassembled assistant text.
 type Exchange struct {
 	// UserText is the newest user turn's flattened message text (the T1 query +
@@ -141,7 +141,7 @@ func (e *Extractor) Process(ex Exchange) Result {
 		return Result{Tier: "T1", Skipped: "rejected: " + strings.Join(q.Flags, ",")}
 	}
 	// BR-A7 / M3-R5 staging gate: score>=floor AND pref_hits>=1.
-	if q.Score < OIKOS_T1_FLOOR || q.PrefHits < OIKOS_T1_PREF_MIN {
+	if q.Score < ESSAIM_T1_FLOOR || q.PrefHits < ESSAIM_T1_PREF_MIN {
 		return Result{Tier: "T1", Skipped: fmt.Sprintf("below gate (score=%.3f pref=%d)", q.Score, q.PrefHits)}
 	}
 
@@ -349,7 +349,7 @@ func t1DedupKey(userText string) string {
 func (e *Extractor) writeActive(payload string) (string, error) {
 	title := titleFromPayload(payload)
 	date := e.now().UTC().Format("2006-01-02")
-	dir := filepath.Join(e.vault, OIKOS_ACTIVE_DIR, date)
+	dir := filepath.Join(e.vault, ESSAIM_ACTIVE_DIR, date)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

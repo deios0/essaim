@@ -12,27 +12,27 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/config"
-	"oikos/internal/secret"
-	"oikos/internal/wire"
+	"essaim/internal/config"
+	"essaim/internal/secret"
+	"essaim/internal/wire"
 )
 
 var (
 	errEmptyKey      = errors.New("an OpenRouter key is required when provider is \"openrouter\"")
-	errNoSecretStore = errors.New("oikos: no credential store available to hold the key")
+	errNoSecretStore = errors.New("essaim: no credential store available to hold the key")
 )
 
-// WedgePitch is the ONE differentiating sentence oikos leads with everywhere:
-// the /setup page hero and the `oikos serve` first-run banner both render this
+// WedgePitch is the ONE differentiating sentence essaim leads with everywhere:
+// the /setup page hero and the `essaim serve` first-run banner both render this
 // exact text, so the lead message can never drift between surfaces.
 //
 // The pitch RIDES the AGENTS.md standard rather than competing with it: a static
 // AGENTS.md gives "one rule → all tools" for free, but you hand-write it and it
-// never learns. oikos's reason-to-exist is that it AUTO-WRITES and MAINTAINS that
+// never learns. essaim's reason-to-exist is that it AUTO-WRITES and MAINTAINS that
 // file from your AI corrections — the preference you teach once stays current in
 // every tool's native rules file. Kept in the indie-dev voice (no
-// compliance/governance/enterprise framing — oikos is free for everyone).
-const WedgePitch = "oikos auto-writes & keeps your AGENTS.md current from your AI corrections — teach a preference once, it stays live in every tool."
+// compliance/governance/enterprise framing — essaim is free for everyone).
+const WedgePitch = "essaim auto-writes & keeps your AGENTS.md current from your AI corrections — teach a preference once, it stays live in every tool."
 
 // setupHTML is the ONE self-contained first-run page (spec §1). It is embedded
 // at build time so the binary ships it — no external network resources, no
@@ -82,22 +82,22 @@ func (s *Server) registerSetupRoutes() {
 //     never cross-site/same-site;
 //   - Origin, when present, must be a loopback origin.
 //
-// A non-browser client (the oikos CLI, curl) sends no Origin/Sec-Fetch and a
+// A non-browser client (the essaim CLI, curl) sends no Origin/Sec-Fetch and a
 // loopback Host, so it passes untouched — the guard targets browsers only.
 func (s *Server) sameOriginOnly(next http.HandlerFunc) http.HandlerFunc {
 	// NOTE on absent headers: a real browser ALWAYS sends Origin on a POST (same-
 	// or cross-origin), so a browser CSRF attempt is caught by the Origin/Sec-Fetch
 	// checks below; a request with NEITHER header is a non-browser local client
-	// (the oikos CLI, curl) on the loopback interface, which is trusted. We
+	// (the essaim CLI, curl) on the loopback interface, which is trusted. We
 	// therefore fail OPEN only for the header-less local case — the browser and
 	// DNS-rebind vectors (non-loopback Host) are still closed.
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !hostIsLoopback(r.Host) {
-			http.Error(w, "oikos setup: cross-host request refused", http.StatusForbidden)
+			http.Error(w, "essaim setup: cross-host request refused", http.StatusForbidden)
 			return
 		}
 		if sfs := r.Header.Get("Sec-Fetch-Site"); sfs != "" && sfs != "same-origin" && sfs != "none" {
-			http.Error(w, "oikos setup: cross-site request refused", http.StatusForbidden)
+			http.Error(w, "essaim setup: cross-site request refused", http.StatusForbidden)
 			return
 		}
 		// Origin, when present, must be the SAME origin as the request's own host
@@ -105,7 +105,7 @@ func (s *Server) sameOriginOnly(next http.HandlerFunc) http.HandlerFunc {
 		// e.g. a sketchy tool on http://127.0.0.1:9999 or an XSS in another local
 		// app — is still cross-origin and must not drive setup (codex review).
 		if o := r.Header.Get("Origin"); o != "" && !originMatchesHost(o, r.Host) {
-			http.Error(w, "oikos setup: cross-origin request refused", http.StatusForbidden)
+			http.Error(w, "essaim setup: cross-origin request refused", http.StatusForbidden)
 			return
 		}
 		next(w, r)
@@ -155,7 +155,7 @@ func originMatchesHost(origin, host string) bool {
 func (s *Server) loopbackOnly(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !isLoopbackRequest(r) {
-			http.Error(w, "oikos setup is loopback-only", http.StatusForbidden)
+			http.Error(w, "essaim setup is loopback-only", http.StatusForbidden)
 			return
 		}
 		next(w, r)
@@ -242,7 +242,7 @@ func (s *Server) setupModel(w http.ResponseWriter, r *http.Request) {
 		}
 		// P0-1: validate the key against the chosen upstream BEFORE persisting it.
 		// A bad key MUST NOT be saved (it would 401 later and the user would blame
-		// oikos). The validation call goes ONLY to the user's chosen upstream — it
+		// essaim). The validation call goes ONLY to the user's chosen upstream — it
 		// is not a new phone-home.
 		if err := s.validateOpenRouterKey(r.Context(), key); err != nil {
 			writeJSON(w, http.StatusBadGateway, errBody(err))
@@ -260,8 +260,8 @@ func (s *Server) setupModel(w http.ResponseWriter, r *http.Request) {
 			// can't be stored, recording provider=openrouter would 401 the next
 			// serve.
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{
-				"error": "oikos can't reach your OS keychain to store the key on this machine. " +
-					"Set the OIKOS_OPENROUTER_KEY environment variable to your key and restart oikos instead.",
+				"error": "essaim can't reach your OS keychain to store the key on this machine. " +
+					"Set the ESSAIM_OPENROUTER_KEY environment variable to your key and restart essaim instead.",
 			})
 			return
 		}
@@ -275,7 +275,7 @@ func (s *Server) setupModel(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// P0-3: the key was validated AND persisted — make the running proxy pick it
-		// up live (no restart). Wiring is set by cmd/oikos; nil in tests/no-op.
+		// up live (no restart). Wiring is set by cmd/essaim; nil in tests/no-op.
 		s.notifyProviderUpdate()
 	default:
 		writeJSON(w, http.StatusBadRequest, map[string]any{
@@ -347,14 +347,14 @@ func (s *Server) liveValidateKey(ctx context.Context, key string) error {
 	defer cancel()
 	outReq, err := http.NewRequestWithContext(vctx, http.MethodGet, base+"/v1/models", nil)
 	if err != nil {
-		return errors.New("oikos: could not build the validation request — " + err.Error())
+		return errors.New("essaim: could not build the validation request — " + err.Error())
 	}
 	outReq.Header.Set("Authorization", "Bearer "+key)
 	resp, err := s.httpClient.Do(outReq)
 	if err != nil {
 		// Could not reach the provider to validate. Do NOT persist on an unconfirmed
 		// key; tell the user plainly (no raw transport jargon as the whole message).
-		return errors.New("oikos couldn't reach the model provider to check that key — verify your connection and try again")
+		return errors.New("essaim couldn't reach the model provider to check that key — verify your connection and try again")
 	}
 	defer resp.Body.Close()
 	// Drain a little of the body so the connection can be reused, but never echo it.
@@ -402,7 +402,7 @@ type wireReq struct {
 	Dir  string `json:"dir"`
 }
 
-// setupWire runs `oikos wire <tool>` through the same wire package the CLI uses,
+// setupWire runs `essaim wire <tool>` through the same wire package the CLI uses,
 // so the UI and the CLI produce identical wiring (channel auto-chosen). It is
 // idempotent.
 func (s *Server) setupWire(w http.ResponseWriter, r *http.Request) {

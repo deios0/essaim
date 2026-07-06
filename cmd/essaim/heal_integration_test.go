@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
-	"oikos/internal/heal"
-	"oikos/internal/wire"
+	"essaim/internal/config"
+	"essaim/internal/heal"
+	"essaim/internal/wire"
 )
 
 // End-to-end through the serve wiring path: a wired Continue tool whose config
-// file gets clobbered by an "IDE update" is healed back to the oikos proxy. This
-// exercises HealTargets → heal.Watcher exactly as `oikos serve` wires them.
+// file gets clobbered by an "IDE update" is healed back to the essaim proxy. This
+// exercises HealTargets → heal.Watcher exactly as `essaim serve` wires them.
 func TestSelfHealEndToEndReappliesProxy(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "continue-config.json")
@@ -40,7 +40,7 @@ func TestSelfHealEndToEndReappliesProxy(t *testing.T) {
 
 	// IDE update factory-resets the base_url to a VENDOR DEFAULT (what a real
 	// Continue/VSCode update does when it restores its OpenAI provider) — this is
-	// oikos's own clobbered value, so it must be healed.
+	// essaim's own clobbered value, so it must be healed.
 	if err := os.WriteFile(cfg, []byte(`{"models":[{"apiBase":"https://api.openai.com/v1"}]}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestSelfHealEndToEndReappliesProxy(t *testing.T) {
 	}
 	b, _ := os.ReadFile(cfg)
 	if !strings.Contains(string(b), wire.ProxyBaseURL) {
-		t.Fatalf("self-heal did not re-point Continue at the oikos proxy:\n%s", b)
+		t.Fatalf("self-heal did not re-point Continue at the essaim proxy:\n%s", b)
 	}
 
 	// And the converse, end-to-end: a base_url the user DELIBERATELY set (their own

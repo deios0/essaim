@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# build-release.sh — cross-compile the `oikos` release artifacts.
+# build-release.sh — cross-compile the `essaim` release artifacts.
 #
-# Produces a static, CGO-free `oikos` binary for every supported
+# Produces a static, CGO-free `essaim` binary for every supported
 # os/arch pair and a single `SHA256SUMS` covering them all, written into
 # ./dist (gitignored). These are the EXACT assets the GitHub Release publishes
 # and that scripts/install.sh{,.ps1} fetch + checksum-verify on a clean box.
@@ -13,12 +13,12 @@
 #   -trimpath       — strip local filesystem paths from the binary (reproducible).
 #   -ldflags "-s -w -X main.version=$VERSION"
 #                     -s -w drop the symbol/debug tables (smaller); the -X stamps
-#                     the version into `var version` in cmd/oikos/main.go so
-#                     `oikos version` prints the real release string.
+#                     the version into `var version` in cmd/essaim/main.go so
+#                     `essaim version` prints the real release string.
 #
 # Asset naming matches what the installers resolve:
-#   oikos_<os>_<arch>        (linux, darwin)
-#   oikos_<os>_<arch>.exe    (windows)
+#   essaim_<os>_<arch>        (linux, darwin)
+#   essaim_<os>_<arch>.exe    (windows)
 # and one SHA256SUMS listing every asset (plain `sha256sum` format).
 #
 # Usage:
@@ -77,7 +77,7 @@ for platform in $PLATFORMS; do
 
 	ext=""
 	[ "$os" = "windows" ] && ext=".exe"
-	asset="oikos_${os}_${arch}${ext}"
+	asset="essaim_${os}_${arch}${ext}"
 	out="$DIST_DIR/$asset"
 
 	echo "  building $asset ..."
@@ -85,7 +85,7 @@ for platform in $PLATFORMS; do
 	# Quote the -X value so a VERSION containing a space can't split into a stray
 	# linker arg and break the build (gemini review).
 	CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" \
-		go build -trimpath -ldflags "-s -w -X 'main.version=$VERSION'" -o "$out" ./cmd/oikos
+		go build -trimpath -ldflags "-s -w -X 'main.version=$VERSION'" -o "$out" ./cmd/essaim
 
 	assets="$assets $asset"
 done

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/capture"
-	"oikos/internal/rules"
+	"essaim/internal/capture"
+	"essaim/internal/rules"
 )
 
 func liveIndex(t *testing.T) *rules.Index {
@@ -67,7 +67,7 @@ func TestNativeEmitterLiveOnlySameDelimiterDebounced(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := string(got)
-	if !strings.Contains(s, rules.OIKOS_BEGIN) || !strings.Contains(s, rules.OIKOS_END) {
+	if !strings.Contains(s, rules.ESSAIM_BEGIN) || !strings.Contains(s, rules.ESSAIM_END) {
 		t.Fatalf("native file must contain the fenced block:\n%s", s)
 	}
 	if !strings.Contains(s, "Always use PostgreSQL") || !strings.Contains(s, "Prefer tabs over spaces") {
@@ -80,8 +80,8 @@ func TestNativeEmitterLiveOnlySameDelimiterDebounced(t *testing.T) {
 		t.Fatalf("user content must be preserved:\n%s", s)
 	}
 	// Exactly one fenced block (no duplication from the 3 swaps).
-	if strings.Count(s, rules.OIKOS_BEGIN) != 1 {
-		t.Fatalf("exactly one fenced block expected, got %d:\n%s", strings.Count(s, rules.OIKOS_BEGIN), s)
+	if strings.Count(s, rules.ESSAIM_BEGIN) != 1 {
+		t.Fatalf("exactly one fenced block expected, got %d:\n%s", strings.Count(s, rules.ESSAIM_BEGIN), s)
 	}
 
 	// The 3 coalesced swaps must have produced EXACTLY ONE disk write (debounce
@@ -103,7 +103,7 @@ func TestNativeEmitterLiveOnlySameDelimiterDebounced(t *testing.T) {
 }
 
 // P2-1: the STANDALONE (CLI) emit path must be idempotent across process
-// boundaries. `oikos emit` constructs a FRESH Emitter each run, so its in-memory
+// boundaries. `essaim emit` constructs a FRESH Emitter each run, so its in-memory
 // `last` map is always empty — the idempotent skip must therefore be driven by the
 // on-disk fenced region, not only by the in-memory cache. A second emit with a
 // brand-new emitter over an UNCHANGED vault+target must be a NO-OP: zero disk
@@ -135,7 +135,7 @@ func TestNativeEmitterCLIPathIdempotentFreshEmitter(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 
 	// Second emit: a BRAND-NEW emitter (empty in-memory last map, exactly like a
-	// second `oikos emit` invocation) over the unchanged file. This must be a no-op.
+	// second `essaim emit` invocation) over the unchanged file. This must be a no-op.
 	e2 := New(rules.GuardConfig{EagerBytes: 4096}, []Tool{{Name: "codex", NativeFile: target}})
 	e2.SetDebounce(0)
 	if _, err := e2.EmitNow(ix); err != nil {
@@ -184,7 +184,7 @@ func TestNativeEmitterReplacesOnlyFencedRegion(t *testing.T) {
 		t.Fatalf("the new live rules must be in the fence:\n%s", s)
 	}
 	// Backup exists.
-	if _, err := os.Stat(target + ".oikos.bak"); err != nil {
+	if _, err := os.Stat(target + ".essaim.bak"); err != nil {
 		t.Fatalf("a restorable backup must exist: %v", err)
 	}
 }
@@ -310,7 +310,7 @@ func TestNativeEmitterSameRecognizerRoundTripStripped(t *testing.T) {
 	// The exact emitted block, pasted into a chat message, must trip the capture
 	// recognizer (so it is excluded from learning — the B2 anti-echo on BOTH
 	// channels).
-	if !capture.ContainsCompleteOikosBlock(block) {
+	if !capture.ContainsCompleteEssaimBlock(block) {
 		t.Fatal("the emitted native block must be recognized by the capture recognizer")
 	}
 }
@@ -329,7 +329,7 @@ func TestNativeEmitterEmptyLiveSetWellFenced(t *testing.T) {
 	if err != nil {
 		t.Fatalf("empty live set must not error: %v", err)
 	}
-	if !strings.Contains(block, rules.OIKOS_BEGIN) || !strings.Contains(block, rules.OIKOS_END) {
+	if !strings.Contains(block, rules.ESSAIM_BEGIN) || !strings.Contains(block, rules.ESSAIM_END) {
 		t.Fatalf("an empty live set must still produce a well-fenced (empty) region: %q", block)
 	}
 }

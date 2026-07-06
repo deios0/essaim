@@ -6,13 +6,13 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/inject"
-	"oikos/internal/rules"
+	"essaim/internal/inject"
+	"essaim/internal/rules"
 )
 
 // F-E [conformance] A-2 skip-on-unsupported (fail-open). If the target model
-// would 400 on an extra leading instruction message, oikos SKIPS injection
-// entirely: forwards the VERBATIM origBody (incl. any stale oikos block — strip
+// would 400 on an extra leading instruction message, essaim SKIPS injection
+// entirely: forwards the VERBATIM origBody (incl. any stale essaim block — strip
 // NOT run), enqueues no capture, classifies NOT degraded. Never turn a working
 // request into a 400.
 
@@ -26,7 +26,7 @@ func serverWithUnsupported(t *testing.T, up, dir string, unsupported func(string
 }
 
 // V1.1-9: skip_injection_when_upstream_marked_unsupported. Upstream/model marked
-// unsupported AND the incoming body contains a PRE-EXISTING stale oikos block ⇒
+// unsupported AND the incoming body contains a PRE-EXISTING stale essaim block ⇒
 // forwarded upstream-bound bytes are byte-identical to origBody (stale block NOT
 // stripped), no degraded, normal 200. (F-V2 verbatim-incl-stale.)
 func TestSkipInjectionWhenModelUnsupportedForwardsVerbatimInclStale(t *testing.T) {
@@ -41,8 +41,8 @@ func TestSkipInjectionWhenModelUnsupportedForwardsVerbatimInclStale(t *testing.T
 		return strings.HasPrefix(m, "strict-")
 	})
 
-	// origBody already carries a stale oikos block (an echoed prior-turn block).
-	stale := `<!-- oikos:rules:begin v=1 -->\n- [H] Old: old rule\n<!-- oikos:rules:end -->`
+	// origBody already carries a stale essaim block (an echoed prior-turn block).
+	stale := `<!-- essaim:rules:begin v=1 -->\n- [H] Old: old rule\n<!-- essaim:rules:end -->`
 	orig := `{"model":"strict-local","messages":[` +
 		`{"role":"system","content":"` + stale + `"},` +
 		`{"role":"user","content":"what database should I use?"}` +
@@ -58,9 +58,9 @@ func TestSkipInjectionWhenModelUnsupportedForwardsVerbatimInclStale(t *testing.T
 	if string(got) != orig {
 		t.Fatalf("skip must forward VERBATIM origBody (incl. stale block).\nwant %q\ngot  %q", orig, got)
 	}
-	// A fresh oikos block must NOT have been injected.
+	// A fresh essaim block must NOT have been injected.
 	if strings.Contains(string(got), "Always use the PostgreSQL database") {
-		t.Fatalf("no fresh oikos block may be injected on the skip path:\n%s", got)
+		t.Fatalf("no fresh essaim block may be injected on the skip path:\n%s", got)
 	}
 	// Skip is NOT degraded (honest, policy-driven no-injection).
 	if s.inj.degraded() {
@@ -86,7 +86,7 @@ func TestSupportedModelStillInjectsWhenSkipConfigured(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(orig))
 	s.Handler().ServeHTTP(rec, req)
 
-	if !strings.Contains(string(got), "<!-- oikos:rules:begin v=1 -->") {
+	if !strings.Contains(string(got), "<!-- essaim:rules:begin v=1 -->") {
 		t.Fatalf("a supported model must still get injection:\n%s", got)
 	}
 }
@@ -116,7 +116,7 @@ func TestSkipUsesObjectLevelModelNotInContentSubstring(t *testing.T) {
 	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(orig))
 	s.Handler().ServeHTTP(rec, req)
 
-	if !strings.Contains(string(got), "<!-- oikos:rules:begin v=1 -->") {
+	if !strings.Contains(string(got), "<!-- essaim:rules:begin v=1 -->") {
 		t.Fatalf("in-content \"model\" substring must NOT trigger a skip; injection expected:\n%s", got)
 	}
 }

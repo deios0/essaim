@@ -11,16 +11,16 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
-	"oikos/internal/secret"
+	"essaim/internal/config"
+	"essaim/internal/secret"
 )
 
 // setupTestServer returns a fresh server with the setup handler wired and an
-// in-memory secret store, plus a temp config path set via OIKOS_CONFIG.
+// in-memory secret store, plus a temp config path set via ESSAIM_CONFIG.
 func setupTestServer(t *testing.T) (*Server, *fakeSecretStore) {
 	t.Helper()
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	s := New("127.0.0.1:4141")
 	fs := &fakeSecretStore{m: map[string]string{}}
 	s.SetSecretStore(fs)
@@ -69,8 +69,8 @@ func TestSetupGETServesSelfContainedHTML(t *testing.T) {
 	if strings.Contains(body, "src=\"http") || strings.Contains(body, "<link") {
 		t.Fatalf("/setup HTML must be self-contained (no external <script src>/<link>):\n%s", body)
 	}
-	if !strings.Contains(body, "oikos") {
-		t.Fatalf("/setup HTML should mention oikos")
+	if !strings.Contains(body, "essaim") {
+		t.Fatalf("/setup HTML should mention essaim")
 	}
 	// The three first-run surfaces must be present.
 	for _, want := range []string{"/setup/model", "/setup/vault", "/setup/wire"} {
@@ -165,7 +165,7 @@ func (fakeFailingStore) Set(string, string) error {
 
 func TestSetupPostModelKeyringFailureGivesActionableMessageNotRaw500(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	s := New("127.0.0.1:4141")
 	s.SetSecretStore(fakeFailingStore{})
 	// Hermetic: the key VALIDATES (so we reach the keychain-store step) but the
@@ -182,8 +182,8 @@ func TestSetupPostModelKeyringFailureGivesActionableMessageNotRaw500(t *testing.
 	}
 	body := rec.Body.String()
 	// The message must point the user at the env-var fallback (the P1-6b pattern).
-	if !strings.Contains(body, "OIKOS_OPENROUTER_KEY") {
-		t.Fatalf("keyring failure message must mention the OIKOS_OPENROUTER_KEY env fallback, got: %s", body)
+	if !strings.Contains(body, "ESSAIM_OPENROUTER_KEY") {
+		t.Fatalf("keyring failure message must mention the ESSAIM_OPENROUTER_KEY env fallback, got: %s", body)
 	}
 	// The raw go-keyring jargon must not leak to the user.
 	if strings.Contains(body, "freedesktop") {

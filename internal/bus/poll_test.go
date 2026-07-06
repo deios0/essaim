@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Poll GETs events after a cursor and returns them + the new max id, so oikos can
+// Poll GETs events after a cursor and returns them + the new max id, so essaim can
 // receive rules/coordination from its zone. The key goes in the header (server
 // filters to the zone); the caller advances the cursor.
 func TestPollReturnsEventsAndAdvancesCursor(t *testing.T) {
@@ -16,7 +16,7 @@ func TestPollReturnsEventsAndAdvancesCursor(t *testing.T) {
 		gotSince = r.URL.Query().Get("since")
 		gotKey = r.Header.Get("X-Aibus-Key")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"events":[{"id":10,"kind":"oikos.rule.shared"},{"id":12,"kind":"x"}]}`))
+		_, _ = w.Write([]byte(`{"events":[{"id":10,"kind":"essaim.rule.shared"},{"id":12,"kind":"x"}]}`))
 	}))
 	defer srv.Close()
 

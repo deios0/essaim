@@ -1,5 +1,5 @@
-// Package wire implements `oikos wire <tool>`: it points a tool at the local
-// oikos proxy (http://127.0.0.1:4141) through the CORRECT channel for that tool,
+// Package wire implements `essaim wire <tool>`: it points a tool at the local
+// essaim proxy (http://127.0.0.1:4141) through the CORRECT channel for that tool,
 // and persists the wiring so it survives a restart. It is idempotent — wiring
 // the same tool twice changes nothing.
 //
@@ -11,7 +11,7 @@
 //     Continue, and any generic OpenAI-compatible tool.
 //   - native_file — the tool learns via a managed block in its instruction file
 //     (CLAUDE.md / AGENTS.md). Used for Claude Code, which in v1 must NEVER be
-//     pointed via ANTHROPIC_BASE_URL (oikos serves no /v1/messages — a base_url
+//     pointed via ANTHROPIC_BASE_URL (essaim serves no /v1/messages — a base_url
 //     repoint would brick it).
 package wire
 
@@ -23,8 +23,8 @@ import (
 	"runtime"
 	"strings"
 
-	"oikos/internal/config"
-	"oikos/internal/rules"
+	"essaim/internal/config"
+	"essaim/internal/rules"
 )
 
 // ProxyBaseURL is the loopback proxy every wired tool points at.
@@ -56,7 +56,7 @@ type Plan struct {
 func Resolve(tool, dir string) (Plan, error) {
 	name := strings.ToLower(strings.TrimSpace(tool))
 	if name == "" {
-		return Plan{}, errors.New("oikos wire: a tool name is required (e.g. `oikos wire cursor`)")
+		return Plan{}, errors.New("essaim wire: a tool name is required (e.g. `essaim wire cursor`)")
 	}
 
 	switch name {
@@ -69,7 +69,7 @@ func Resolve(tool, dir string) (Plan, error) {
 			Tool:       "claude-code",
 			Channel:    ChannelNativeFile,
 			NativeFile: nf,
-			Note:       "Claude Code learns via a managed block in CLAUDE.md (oikos v1 serves no /v1/messages — it is NEVER pointed via ANTHROPIC_BASE_URL).",
+			Note:       "Claude Code learns via a managed block in CLAUDE.md (essaim v1 serves no /v1/messages — it is NEVER pointed via ANTHROPIC_BASE_URL).",
 		}, nil
 
 	case "codex", "agents":
@@ -157,29 +157,29 @@ func (p Plan) EnvExport() string {
 // Apply performs the wiring side effects and persists the result to the config
 // store. It is idempotent. It returns the loaded-and-updated config.
 //
-//   - base_url:    nothing is written to any tool config file (oikos can't know
+//   - base_url:    nothing is written to any tool config file (essaim can't know
 //     every tool's config schema); the persisted record + the printed env-export
 //     are the wiring. The user (or the /setup UI) applies the env line.
-//   - native_file: a managed (empty) oikos block is seeded into the instruction
+//   - native_file: a managed (empty) essaim block is seeded into the instruction
 //     file so the emitter has an anchor, preserving all user content. Re-applying
 //     never adds a second block.
 func Apply(p Plan) (config.Config, error) {
 	wt := config.WiredTool{Name: p.Tool, Channel: p.Channel}
 	if p.Channel == ChannelBaseURL {
 		// Deferred-6: capture the user's ORIGINAL upstream from the tool's IDE config
-		// BEFORE oikos ever heals it, so `oikos unwire` restores THAT exact value (their
+		// BEFORE essaim ever heals it, so `essaim unwire` restores THAT exact value (their
 		// real provider — a non-OpenAI vendor, their own gateway) instead of a hardcoded
 		// OpenAI default. Best-effort: "" when there is no config yet / no base_url set /
-		// it already points at oikos — unwire then falls back to the vendor default.
+		// it already points at essaim — unwire then falls back to the vendor default.
 		wt.OriginalBaseURL = captureOriginalBaseURL(baseURLConfigPath(p.Tool))
 	}
 	if p.Channel == ChannelNativeFile {
 		wt.NativeFile = p.NativeFile
 		// P0-2 (a): back up the PRISTINE target before modifying it, exactly like the
-		// emitter (writeRenameFencedWithBackup) — so `oikos unwire` can restore it
+		// emitter (writeRenameFencedWithBackup) — so `essaim unwire` can restore it
 		// byte-exact. The backup is taken ONCE: if one already exists (a prior wire /
-		// a live emit), the file already carries an oikos block and re-backing it up
-		// would overwrite the clean original. A file oikos is about to CREATE (no
+		// a live emit), the file already carries an essaim block and re-backing it up
+		// would overwrite the clean original. A file essaim is about to CREATE (no
 		// pre-existing original) has nothing to back up — its "original" is "no file".
 		//
 		// These file side-effects run BEFORE the config read-modify-write so the
@@ -197,7 +197,7 @@ func Apply(p Plan) (config.Config, error) {
 	// Load→mutate→Save.
 	var out config.Config
 	if err := config.Update(func(c *config.Config) error {
-		// Deferred-6: on a RE-wire, oikos may have already healed the IDE config, so
+		// Deferred-6: on a RE-wire, essaim may have already healed the IDE config, so
 		// captureOriginalBaseURL above returns "" (only the proxy URL is present). Do
 		// NOT overwrite a previously-captured original with "" — carry it forward so
 		// the day-0 upstream is never lost across idempotent re-wires.
@@ -215,7 +215,7 @@ func Apply(p Plan) (config.Config, error) {
 	return out, nil
 }
 
-// seedManagedBlock ensures path contains exactly one empty oikos managed block
+// seedManagedBlock ensures path contains exactly one empty essaim managed block
 // (the BEGIN…END fence), preserving any existing user content. If the file
 // already has a block (from a prior wire or a live emit) it is left untouched —
 // the emitter owns the block's contents. A missing file/parent is created.
@@ -225,7 +225,7 @@ func seedManagedBlock(path string) error {
 		return err
 	}
 	existing := string(raw)
-	if strings.Contains(existing, rules.OIKOS_BEGIN) {
+	if strings.Contains(existing, rules.ESSAIM_BEGIN) {
 		return nil // already anchored — idempotent
 	}
 
@@ -254,20 +254,20 @@ func seedManagedBlock(path string) error {
 
 // backupSuffix is appended to a native-file target to hold the pristine
 // pre-wire snapshot, matching the emitter's backup convention (one delimiter, one
-// reader). `oikos unwire` restores from it and removes it.
-const backupSuffix = ".oikos.bak"
+// reader). `essaim unwire` restores from it and removes it.
+const backupSuffix = ".essaim.bak"
 
-// backupTargetOnce snapshots the PRISTINE target file to <path>.oikos.bak before
-// the first oikos modification (P0-2 (a)). It is idempotent: a backup is taken
+// backupTargetOnce snapshots the PRISTINE target file to <path>.essaim.bak before
+// the first essaim modification (P0-2 (a)). It is idempotent: a backup is taken
 // only when none exists yet — a later wire reads a file that ALREADY carries an
-// oikos block, and backing THAT up would lose the user's clean original. A missing
-// target (a file oikos is about to create) has no original to back up, so no
+// essaim block, and backing THAT up would lose the user's clean original. A missing
+// target (a file essaim is about to create) has no original to back up, so no
 // backup is written; unwire then treats "no backup" as "the file did not exist /
-// oikos created it" and strips the block (or removes a block-only file).
+// essaim created it" and strips the block (or removes a block-only file).
 func backupTargetOnce(path string) error {
 	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return nil // nothing to back up: oikos will create this file
+		return nil // nothing to back up: essaim will create this file
 	}
 	if err != nil {
 		return err
@@ -281,12 +281,12 @@ func backupTargetOnce(path string) error {
 	return os.WriteFile(bak, raw, 0o644)
 }
 
-// UnwireOutcome describes what `oikos unwire` did, so the CLI can print an HONEST
+// UnwireOutcome describes what `essaim unwire` did, so the CLI can print an HONEST
 // message (P1-BUG-2) instead of a blanket "original config restored". Channel is
 // the wiring channel that was undone (or resolved). BaseURL carries the base_url
-// tool's config-restore status: whether oikos removed its own proxy URL, whether
+// tool's config-restore status: whether essaim removed its own proxy URL, whether
 // the config could not be auto-restored (a manual-recovery hint is warranted), and
-// the config path oikos acted on.
+// the config path essaim acted on.
 type UnwireOutcome struct {
 	Tool    string
 	Channel string
@@ -294,7 +294,7 @@ type UnwireOutcome struct {
 	BaseURL RestoreStatus
 }
 
-// Unwire is the clean undo of `oikos wire <tool>` (P0-2 (b)). It is idempotent —
+// Unwire is the clean undo of `essaim wire <tool>` (P0-2 (b)). It is idempotent —
 // unwiring a tool that is not wired is a clean no-op. It is a thin wrapper over
 // UnwireResult that discards the outcome detail (kept for callers that only need
 // success/failure). See UnwireResult for the full behavior.
@@ -304,21 +304,21 @@ func Unwire(tool, dir string) error {
 }
 
 // UnwireResult is Unwire with a reported outcome. For a native-file tool it
-// restores the target byte-exact from the .oikos.bak backup (then removes the
-// backup); if there is no backup (oikos created the file), it removes the managed
+// restores the target byte-exact from the .essaim.bak backup (then removes the
+// backup); if there is no backup (essaim created the file), it removes the managed
 // block, deleting the file when only the block remains (the original "no file"
 // state). For a base_url tool it runs the INVERSE of the heal repair on the tool's
-// IDE config (P1-BUG-2): the heal watcher wrote the oikos proxy URL there, so after
-// the user deletes oikos that URL points at a dead loopback — unwire replaces it
+// IDE config (P1-BUG-2): the heal watcher wrote the essaim proxy URL there, so after
+// the user deletes essaim that URL points at a dead loopback — unwire replaces it
 // with the vendor default (or flags a manual-recovery hint if it can't). In all
 // cases the matching wired-tool record is removed.
 //
 // dir anchors a native-file tool's instruction file the same way Resolve does, so
-// `oikos unwire claude-code` undoes `oikos wire claude-code` in the same directory.
+// `essaim unwire claude-code` undoes `essaim wire claude-code` in the same directory.
 func UnwireResult(tool, dir string) (UnwireOutcome, error) {
 	name := strings.ToLower(strings.TrimSpace(tool))
 	if name == "" {
-		return UnwireOutcome{}, errors.New("oikos unwire: a tool name is required (e.g. `oikos unwire claude-code`)")
+		return UnwireOutcome{}, errors.New("essaim unwire: a tool name is required (e.g. `essaim unwire claude-code`)")
 	}
 
 	c, err := config.Load()
@@ -363,7 +363,7 @@ func UnwireResult(tool, dir string) (UnwireOutcome, error) {
 	// P1-BUG-2: a base_url tool DID leave state on disk once the daemon ran — the
 	// heal watcher wrote the proxy URL into the tool's IDE config. Run the INVERSE
 	// of heal on that config so the user isn't left pointing at a dead proxy after
-	// deleting oikos. This runs whether or not a record was found (a lost config
+	// deleting essaim. This runs whether or not a record was found (a lost config
 	// must still be recoverable), and is best-effort: an un-restorable config yields
 	// a hint via the returned status, not a hard failure.
 	if plan.Channel == ChannelBaseURL {
@@ -396,10 +396,10 @@ func UnwireResult(tool, dir string) (UnwireOutcome, error) {
 	return outcome, err
 }
 
-// restoreNativeFile undoes a native-file wiring on disk. When a .oikos.bak backup
-// exists it is restored byte-exact (and removed). Otherwise the managed oikos
+// restoreNativeFile undoes a native-file wiring on disk. When a .essaim.bak backup
+// exists it is restored byte-exact (and removed). Otherwise the managed essaim
 // block is stripped from the file, preserving all surrounding user content; if the
-// file then holds nothing but whitespace (oikos had created it with only the
+// file then holds nothing but whitespace (essaim had created it with only the
 // block), it is removed so the original "no file" state is restored. A missing
 // target is a no-op.
 func restoreNativeFile(path string) error {
@@ -431,7 +431,7 @@ func restoreNativeFile(path string) error {
 	if hasBak {
 		// P0-3: the backup is the DAY-0 pristine snapshot, never refreshed. Restore
 		// it byte-exact ONLY when the user has not diverged the file since wiring —
-		// i.e. the current content with oikos's managed block stripped equals the
+		// i.e. the current content with essaim's managed block stripped equals the
 		// backup (or the current file already IS the backup). Otherwise the user
 		// edited the file after wiring and a byte-exact restore would silently
 		// destroy those edits; preserve the current (block-stripped) content
@@ -454,7 +454,7 @@ func restoreNativeFile(path string) error {
 			}
 			return os.Remove(bak)
 		}
-		// Diverged — preserve the user's current content, minus oikos's block.
+		// Diverged — preserve the user's current content, minus essaim's block.
 		if hadOnlyBlock {
 			if rerr := os.Remove(path); rerr != nil {
 				return rerr
@@ -465,27 +465,27 @@ func restoreNativeFile(path string) error {
 		return os.Remove(bak)
 	}
 
-	// No backup: only act if there is actually an oikos-managed block to remove. A
+	// No backup: only act if there is actually an essaim-managed block to remove. A
 	// file with NO managed block (or only a user's inline sentinel) is none of
-	// oikos's business — leave it byte-untouched so unwiring a never-wired (or
+	// essaim's business — leave it byte-untouched so unwiring a never-wired (or
 	// already-unwired) tool can never delete or rewrite an unrelated user file.
 	if _, _, ok := rules.ManagedRegion(s); !ok {
 		return nil // no managed block here → do not touch the file
 	}
 	if hadOnlyBlock {
-		// The file held ONLY the oikos block (oikos created it) — restore the
+		// The file held ONLY the essaim block (essaim created it) — restore the
 		// original "no file" state.
 		return os.Remove(path)
 	}
 	return os.WriteFile(path, []byte(stripped), 0o644)
 }
 
-// stripManagedBlock removes the single OIKOS_BEGIN…OIKOS_END region from s plus
+// stripManagedBlock removes the single ESSAIM_BEGIN…ESSAIM_END region from s plus
 // exactly the ONE separator the seeder/emitter inserts around it (a single
 // trailing "\n" off the preceding content and a single leading "\n" off the
 // following content) — never multiple, so user-authored blank lines around the
 // block are preserved. onlyBlock reports whether the file was nothing but the
-// block (modulo whitespace), i.e. oikos created the file. A string with no block
+// block (modulo whitespace), i.e. essaim created the file. A string with no block
 // is returned unchanged. The caller guarantees a block is present.
 func stripManagedBlock(s string) (out string, onlyBlock bool) {
 	// Use the shared line-anchored recognizer so a user's INLINE sentinel is never
@@ -498,7 +498,7 @@ func stripManagedBlock(s string) (out string, onlyBlock bool) {
 	}
 	before, after := s[:bi], s[end:]
 
-	// oikos created the file iff everything outside the block is whitespace.
+	// essaim created the file iff everything outside the block is whitespace.
 	onlyBlock = strings.TrimSpace(before) == "" && strings.TrimSpace(after) == ""
 	if onlyBlock {
 		return "", true
@@ -528,7 +528,7 @@ func stripManagedBlock(s string) (out string, onlyBlock bool) {
 }
 
 // nativeFileEqual compares two NativeFile paths for the wiring-identity match.
-// Deferred-7: on Windows the filesystem is case-insensitive, so `oikos unwire
+// Deferred-7: on Windows the filesystem is case-insensitive, so `essaim unwire
 // --dir C:\Proj claude-code` must match a record wired as `c:\proj\CLAUDE.md` —
 // an exact-string compare there would ORPHAN the record (leave it in config while
 // the file is un-wired), and a re-wire would then duplicate it. We compare
@@ -581,10 +581,10 @@ func removeWiredTool(c config.Config, name, nativeFile string) config.Config {
 func (p Plan) Summary() string {
 	switch p.Channel {
 	case ChannelNativeFile:
-		return fmt.Sprintf("wired %s via its native file %s — oikos will keep a ranked rule block there.\n%s",
+		return fmt.Sprintf("wired %s via its native file %s — essaim will keep a ranked rule block there.\n%s",
 			p.Tool, p.NativeFile, p.Note)
 	default:
-		return fmt.Sprintf("wired %s to the oikos proxy. Point it at:\n  %s\n  %s\n%s",
+		return fmt.Sprintf("wired %s to the essaim proxy. Point it at:\n  %s\n  %s\n%s",
 			p.Tool, p.EnvExport(), p.BaseURL+"/v1", p.Note)
 	}
 }

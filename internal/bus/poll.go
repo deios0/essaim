@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Event is a minimal decoded bus event — enough for oikos to react to its zone's
+// Event is a minimal decoded bus event — enough for essaim to react to its zone's
 // coordination/rule events. The full payload is kept raw for the caller.
 type Event struct {
 	ID      int64           `json:"id"`
@@ -50,13 +50,13 @@ func (c *Client) pollLimited(ctx context.Context, since int64, limit int) ([]Eve
 	defer resp.Body.Close()
 	rb, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, since, fmt.Errorf("oikos bus poll: %s: %s", resp.Status, strings.TrimSpace(string(rb)))
+		return nil, since, fmt.Errorf("essaim bus poll: %s: %s", resp.Status, strings.TrimSpace(string(rb)))
 	}
 	var out struct {
 		Events []Event `json:"events"`
 	}
 	if err := json.Unmarshal(rb, &out); err != nil {
-		return nil, since, fmt.Errorf("oikos bus poll: bad response: %w", err)
+		return nil, since, fmt.Errorf("essaim bus poll: bad response: %w", err)
 	}
 	maxID := since
 	for _, e := range out.Events {

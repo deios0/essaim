@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// DefaultHalfLifeDays is the decay half-life stamped on every oikos-AUTHORED rule
+// DefaultHalfLifeDays is the decay half-life stamped on every essaim-AUTHORED rule
 // (P2-2). Without it a written rule loads with HalfLife==0 and DecayedEffWeight /
 // effWeight never decay it — so a wrongly-promoted rule would live forever. 30
 // days is the spec's canonical preference half-life (v1-spec example
@@ -47,7 +47,7 @@ func renderRuleDoc(d ruleDoc) string {
 	fmt.Fprintf(&b, "confidence: %s\n", trimFloat(d.Confidence))
 	fmt.Fprintf(&b, "weight: %s\n", trimFloat(d.Weight))
 	// half_life_days: written only when positive (mirrors the canonical
-	// rules/persist.go writer). An oikos-authored rule MUST carry it so the decay
+	// rules/persist.go writer). An essaim-authored rule MUST carry it so the decay
 	// clock can retire an unreinforced (or wrongly-promoted) rule — otherwise
 	// HalfLife loads as 0 and the rule never decays (P2-2).
 	if d.HalfLife > 0 {
@@ -92,7 +92,7 @@ func trimFloat(f float64) string {
 // sees a half-written file). The parent dir must already exist.
 func atomicWrite(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, ".oikos-*.tmp")
+	tmp, err := os.CreateTemp(dir, ".essaim-*.tmp")
 	if err != nil {
 		return err
 	}

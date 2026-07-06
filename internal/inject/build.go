@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"strconv"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // Parsed holds the result of ONE structural parse of the request body so the
@@ -47,8 +47,8 @@ func (p Parsed) LastUser() string {
 
 // Build performs the full B1 request-side transform on the raw request body:
 //
-//	STEP 0  idempotent strip of every prior oikos block (whole-element delete);
-//	        compute the oikos-free clean messages for the capture snapshot.
+//	STEP 0  idempotent strip of every prior essaim block (whole-element delete);
+//	        compute the essaim-free clean messages for the capture snapshot.
 //	STEP 2  if matched is empty → return the stripped body (nothing injected).
 //	STEP 3  render+wrap one block in the inherited instruction role and splice it
 //	        immediately before the client's first instruction message (or index 0
@@ -76,20 +76,20 @@ func (p Parsed) Build(matched []rules.Rule, matchedIDs []string) (Result, error)
 
 	model, _ := getModel(body)
 
-	// STEP 0 — strip prior oikos blocks. We build a parallel list of surviving
+	// STEP 0 — strip prior essaim blocks. We build a parallel list of surviving
 	// message views (for role/index decisions). `stripped` is true iff at least
 	// one prior block was removed (the rare re-injection path).
 	clean := make([]message, 0, len(msgs))
 	stripped := false
 	for _, m := range msgs {
-		if isOikosBlock(m) {
+		if isEssaimBlock(m) {
 			stripped = true
 			continue // drop our prior-turn self-block (closes B2 stacking)
 		}
 		clean = append(clean, m)
 	}
 
-	// The oikos-free messages array bytes for the capture snapshot. When nothing
+	// The essaim-free messages array bytes for the capture snapshot. When nothing
 	// was stripped this is the ORIGINAL array sub-slice (ZERO-copy — P0-1: avoid a
 	// full-body copy on the hot path); only when a block was actually stripped do
 	// we rebuild from the surviving spans.
@@ -158,7 +158,7 @@ func (p Parsed) Build(matched []rules.Rule, matchedIDs []string) (Result, error)
 		// doubling-buffer rebuild (≈8.5× body in allocs) with one exact-size copy.
 		out = headInject(body, arrStart, blockJSON)
 	} else {
-		// STRIP PATH (a prior oikos block was removed mid-conversation — common in
+		// STRIP PATH (a prior essaim block was removed mid-conversation — common in
 		// normal use: the NativeFileEmitter writes a block into CLAUDE.md and the
 		// tool sends that file back as context). The surviving elements are NOT
 		// contiguous (a hole was punched where the block stood), so we cannot
@@ -179,7 +179,7 @@ func (p Parsed) Build(matched []rules.Rule, matchedIDs []string) (Result, error)
 // envelope (the structural scanner only checks brace BALANCE) WITHOUT re-scanning
 // the multi-MB verbatim client message content (which would blow the <15ms
 // budget). The array elements themselves are the client's verbatim bytes — if a
-// client element is itself malformed, oikos forwards it unchanged (it never made
+// client element is itself malformed, essaim forwards it unchanged (it never made
 // a valid request invalid), so it is out of scope for this gate.
 func envelopeValid(body []byte, arrStart, arrEnd int) bool {
 	skeleton := make([]byte, 0, arrStart+2+(len(body)-arrEnd-1))
@@ -217,7 +217,7 @@ func headInject(body []byte, arrStart int, blockJSON []byte) []byte {
 }
 
 // headInjectStripped builds the rewritten body for the STRIP path — "a prior
-// oikos block was removed, then inject ONE element at array head" — using a
+// essaim block was removed, then inject ONE element at array head" — using a
 // SINGLE pre-sized allocation and ONE copy of every surviving span (P0-1 applied
 // to the strip path). Unlike headInject, the surviving elements are NOT contiguous
 // (the stripped block left a hole), so we cannot pass-through one verbatim tail;
@@ -226,7 +226,7 @@ func headInject(body []byte, arrStart int, blockJSON []byte) []byte {
 //
 //	body[:arrStart] + '[' + blockJSON + ',' + clean[0] + ',' + clean[1] + … + ']' + body[arrEnd+1:]
 //
-// `clean` are the surviving (non-oikos) message views into `body`; `arrStart` /
+// `clean` are the surviving (non-essaim) message views into `body`; `arrStart` /
 // `arrEnd` bound the original messages array '['…']' inclusive, so body[:arrStart]
 // (envelope head, e.g. `{"model":…,"messages":`) and body[arrEnd+1:] (envelope
 // tail, e.g. `]}` minus the array … plus trailing top-level fields) pass through
@@ -300,7 +300,7 @@ func getModel(body []byte) (string, bool) {
 // not a doubling bytes.Buffer + whole-array re-copy. joinElements is called for
 // the capture snapshot cleanArrJSON (inject+stripped path) and the empty-match-
 // stripped emit — both triggered by a large multi-turn body carrying a prior
-// oikos block, the SAME trigger as the original P0-1 slow-path bug. A non-presized
+// essaim block, the SAME trigger as the original P0-1 slow-path bug. A non-presized
 // buffer that grows by doubling (and is then re-copied) can blow the <15ms budget
 // on a multi-MB body and fail-open the moat; one exact-size allocation cannot.
 func joinElements(body []byte, msgs []message) []byte {
@@ -337,7 +337,7 @@ func splice(body []byte, arrStart, arrEnd int, newArr []byte) []byte {
 }
 
 // encodeMessage serializes a single {"role":..,"content":..} message object. The
-// content is the wrapped oikos block; we JSON-escape it correctly (it contains
+// content is the wrapped essaim block; we JSON-escape it correctly (it contains
 // no characters needing escaping beyond newlines, but we escape defensively).
 func encodeMessage(role, content string) []byte {
 	var b bytes.Buffer

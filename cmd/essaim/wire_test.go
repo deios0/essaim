@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
-	"oikos/internal/server"
+	"essaim/internal/config"
+	"essaim/internal/server"
 )
 
 func writeTestFile(path, content string) error {
@@ -24,7 +24,7 @@ func TestRunWireRequiresToolArg(t *testing.T) {
 
 func TestRunWireCursorPrintsEnvExportAndPersists(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	var out bytes.Buffer
 	if err := runWire([]string{"cursor"}, &out); err != nil {
@@ -42,7 +42,7 @@ func TestRunWireCursorPrintsEnvExportAndPersists(t *testing.T) {
 
 func TestRunWireClaudeCodeIsIdempotent(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	var out bytes.Buffer
 	// Anchor the native file under the temp dir via --dir so the test never
@@ -66,7 +66,7 @@ func TestRunWireClaudeCodeIsIdempotent(t *testing.T) {
 	}
 	// The native file got exactly one managed block.
 	b := readTestFile(t, filepath.Join(dir, "CLAUDE.md"))
-	if got := strings.Count(b, "oikos:rules:begin"); got != 1 {
+	if got := strings.Count(b, "essaim:rules:begin"); got != 1 {
 		t.Fatalf("CLAUDE.md has %d managed blocks, want 1", got)
 	}
 }
@@ -80,7 +80,7 @@ func TestRunUnwireRequiresToolArg(t *testing.T) {
 
 func TestRunUnwireRestoresAndRemovesRecord(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	target := filepath.Join(dir, "CLAUDE.md")
 	const original = "# Mine\n\nUntouchable.\n"
 	if err := writeTestFile(target, original); err != nil {
@@ -111,13 +111,13 @@ func TestRunUnwireRestoresAndRemovesRecord(t *testing.T) {
 	}
 }
 
-// P1-BUG-2: unwiring a base_url tool whose config location oikos does NOT know
+// P1-BUG-2: unwiring a base_url tool whose config location essaim does NOT know
 // (cursor stores config in an internal SQLite store) must NOT claim "original
 // config restored" — it must print an honest manual-recovery hint so a user left
 // pointing at the dead proxy knows to fix it.
 func TestRunUnwireBaseURLUnknownConfigPrintsHint(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	var out bytes.Buffer
 	if err := runWire([]string{"cursor"}, &out); err != nil {
@@ -137,11 +137,11 @@ func TestRunUnwireBaseURLUnknownConfigPrintsHint(t *testing.T) {
 	}
 }
 
-// P1-BUG-2: unwiring a base_url tool whose config oikos DID auto-restore must say
+// P1-BUG-2: unwiring a base_url tool whose config essaim DID auto-restore must say
 // so honestly (it removed the proxy URL), pointing at the file it fixed.
 func TestRunUnwireBaseURLRestoredPrintsHonestMessage(t *testing.T) {
 	root := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(root, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(root, "config.json"))
 	fakeHome := filepath.Join(root, "home")
 	contDir := filepath.Join(fakeHome, ".continue")
 	if err := os.MkdirAll(contDir, 0o755); err != nil {
@@ -164,7 +164,7 @@ func TestRunUnwireBaseURLRestoredPrintsHonestMessage(t *testing.T) {
 	}
 	s := out.String()
 	if !strings.Contains(s, ".continue") {
-		t.Fatalf("honest restore message must name the config file oikos fixed:\n%s", s)
+		t.Fatalf("honest restore message must name the config file essaim fixed:\n%s", s)
 	}
 	// And the file no longer points at the proxy.
 	got := readTestFile(t, cfgPath)
@@ -182,7 +182,7 @@ func TestFirstRunBannerMentionsSetupURL(t *testing.T) {
 
 // The first-run banner must LEAD with the wedge pitch — the same exact sentence
 // the /setup page renders (one source of truth: server.WedgePitch). This is the
-// first message a fresh user sees on `oikos serve`, so the differentiator lands
+// first message a fresh user sees on `essaim serve`, so the differentiator lands
 // before anything else.
 func TestFirstRunBannerLeadsWithWedgePitch(t *testing.T) {
 	banner := firstRunBanner()

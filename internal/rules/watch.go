@@ -59,7 +59,7 @@ type Store struct {
 }
 
 // NewStore loads the vault at dir and publishes the initial index. An empty dir
-// (OIKOS_VAULT unset) yields a Store with a nil index = no rules = no injection,
+// (ESSAIM_VAULT unset) yields a Store with a nil index = no rules = no injection,
 // cleanly. It does NOT start watching; call Watch to enable live reload.
 func NewStore(dir string) (*Store, error) {
 	s := &Store{dir: dir, debounce: defaultDebounce, poll: defaultPollInterval}

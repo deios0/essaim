@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // HealTargets must produce a self-heal target for a wired base_url tool whose
-// IDE config file we know how to repair (Continue), pointed at the oikos proxy.
+// IDE config file we know how to repair (Continue), pointed at the essaim proxy.
 func TestHealTargetsForWiredContinue(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "continue-config.json")
-	// A Continue config that currently points at oikos.
+	// A Continue config that currently points at essaim.
 	writeFile(t, cfgPath, `{"models":[{"apiBase":"`+ProxyBaseURL+`/v1"}]}`)
 
 	c := config.Config{
@@ -31,10 +31,10 @@ func TestHealTargetsForWiredContinue(t *testing.T) {
 		t.Fatalf("target path = %q, want %q", tg.Path, cfgPath)
 	}
 	if !strings.Contains(tg.ExpectedURL, "127.0.0.1:4141") {
-		t.Fatalf("target ExpectedURL must be the oikos proxy, got %q", tg.ExpectedURL)
+		t.Fatalf("target ExpectedURL must be the essaim proxy, got %q", tg.ExpectedURL)
 	}
 
-	// Repair: an IDE-clobbered config (apiBase moved off oikos) must be healed
+	// Repair: an IDE-clobbered config (apiBase moved off essaim) must be healed
 	// back to the proxy while PRESERVING the rest of the JSON.
 	clobbered := []byte(`{"models":[{"apiBase":"https://api.openai.com/v1"}],"theme":"dark"}`)
 	healed, changed, err := tg.Repair(clobbered)
@@ -45,7 +45,7 @@ func TestHealTargetsForWiredContinue(t *testing.T) {
 		t.Fatal("Repair must report a change when the proxy url was clobbered")
 	}
 	if !strings.Contains(string(healed), "127.0.0.1:4141") {
-		t.Fatalf("Repair must re-point apiBase at the oikos proxy:\n%s", healed)
+		t.Fatalf("Repair must re-point apiBase at the essaim proxy:\n%s", healed)
 	}
 	if !strings.Contains(string(healed), `"theme"`) || !strings.Contains(string(healed), `"dark"`) {
 		t.Fatalf("Repair must preserve unrelated config keys:\n%s", healed)
@@ -63,8 +63,8 @@ func TestHealTargetsForWiredContinue(t *testing.T) {
 
 // P1-BUG-3: the heal watcher must not SILENTLY fight a user who reverts their IDE
 // to the vendor default — every successful heal must call the onHeal sink (mirror
-// of onError) so `serve` can tell the user "oikos re-pointed <tool> at the proxy;
-// to stop, run `oikos unwire <tool>`". The sink must fire with the tool name and
+// of onError) so `serve` can tell the user "essaim re-pointed <tool> at the proxy;
+// to stop, run `essaim unwire <tool>`". The sink must fire with the tool name and
 // the config path, and ONLY when a heal actually happened.
 func TestHealTargetsCallsOnHealSinkOnSuccessfulHeal(t *testing.T) {
 	dir := t.TempDir()
@@ -136,12 +136,12 @@ func TestHealTargetsNilSinkIsSafe(t *testing.T) {
 	}
 }
 
-// The onHeal message content is oikos's honesty contract with the user. Build the
+// The onHeal message content is essaim's honesty contract with the user. Build the
 // exact stderr line `serve` should print and assert it names the tool, the path,
-// and the escape hatch (`oikos unwire <tool>`).
+// and the escape hatch (`essaim unwire <tool>`).
 func TestHealNoticeNamesToolPathAndUnwire(t *testing.T) {
 	msg := HealNotice("continue", "/home/u/.continue/config.json")
-	for _, must := range []string{"continue", "/home/u/.continue/config.json", "oikos unwire continue"} {
+	for _, must := range []string{"continue", "/home/u/.continue/config.json", "essaim unwire continue"} {
 		if !strings.Contains(msg, must) {
 			t.Fatalf("heal notice must mention %q; got:\n%s", must, msg)
 		}
@@ -150,7 +150,7 @@ func TestHealNoticeNamesToolPathAndUnwire(t *testing.T) {
 
 // Native-file tools (Claude Code) are NEVER base_url-wired, so they must produce
 // no heal target — there is no base_url to keep alive (healing one would brick
-// Claude Code, which oikos v1 must never point via ANTHROPIC_BASE_URL).
+// Claude Code, which essaim v1 must never point via ANTHROPIC_BASE_URL).
 func TestHealTargetsExcludesNativeFileTools(t *testing.T) {
 	c := config.Config{
 		WiredTools: []config.WiredTool{
@@ -188,8 +188,8 @@ func TestHealTargetsEmptyConfig(t *testing.T) {
 	}
 }
 
-// Every base_url heal target must record LastWritten = the exact proxy URL oikos
-// writes, so the healer only ever re-applies over oikos's OWN value.
+// Every base_url heal target must record LastWritten = the exact proxy URL essaim
+// writes, so the healer only ever re-applies over essaim's OWN value.
 func TestHealTargetsRecordLastWritten(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.json")
@@ -202,13 +202,13 @@ func TestHealTargetsRecordLastWritten(t *testing.T) {
 		t.Fatalf("want 1 target, got %d", len(targets))
 	}
 	if targets[0].LastWritten != ProxyBaseURL+"/v1" {
-		t.Fatalf("LastWritten = %q, want the oikos proxy url", targets[0].LastWritten)
+		t.Fatalf("LastWritten = %q, want the essaim proxy url", targets[0].LastWritten)
 	}
 }
 
-// THE SHIP-BLOCKER TEST: a base_url the USER deliberately set to a non-oikos,
+// THE SHIP-BLOCKER TEST: a base_url the USER deliberately set to a non-essaim,
 // non-vendor-default URL (their own gateway) must be LEFT ALONE. Repair reports
-// no change and does not touch the value — oikos must never fight the user.
+// no change and does not touch the value — essaim must never fight the user.
 func TestRepairLeavesDeliberateUserOverrideAlone(t *testing.T) {
 	cases := []string{
 		`{"apiBase":"https://my-llm-gateway.internal/v1"}`,
@@ -229,7 +229,7 @@ func TestRepairLeavesDeliberateUserOverrideAlone(t *testing.T) {
 	}
 }
 
-// An IDE factory-reset (vendor-default host) IS oikos's clobbered value and MUST
+// An IDE factory-reset (vendor-default host) IS essaim's clobbered value and MUST
 // be healed back to the proxy.
 func TestRepairHealsVendorDefaultClobber(t *testing.T) {
 	for _, vendor := range []string{
@@ -245,12 +245,12 @@ func TestRepairHealsVendorDefaultClobber(t *testing.T) {
 			t.Fatalf("a vendor-default clobber must be healed; %s left unchanged", vendor)
 		}
 		if !strings.Contains(string(out), ProxyBaseURL) {
-			t.Fatalf("heal must re-point at the oikos proxy:\n%s", out)
+			t.Fatalf("heal must re-point at the essaim proxy:\n%s", out)
 		}
 	}
 }
 
-// An EMPTY (dropped/blanked) managed value is oikos's value removed and must be
+// An EMPTY (dropped/blanked) managed value is essaim's value removed and must be
 // re-applied.
 func TestRepairHealsEmptyValue(t *testing.T) {
 	out, changed, err := repairBaseURL([]byte(`{"apiBase":""}`))
@@ -258,14 +258,14 @@ func TestRepairHealsEmptyValue(t *testing.T) {
 		t.Fatalf("repairBaseURL: %v", err)
 	}
 	if !changed {
-		t.Fatal("an empty base_url must be healed (oikos's value was dropped)")
+		t.Fatal("an empty base_url must be healed (essaim's value was dropped)")
 	}
 	if !strings.Contains(string(out), ProxyBaseURL) {
-		t.Fatalf("heal must re-point at the oikos proxy:\n%s", out)
+		t.Fatalf("heal must re-point at the essaim proxy:\n%s", out)
 	}
 }
 
-// A config already on the oikos proxy is healthy — no change, byte-exact.
+// A config already on the essaim proxy is healthy — no change, byte-exact.
 func TestRepairLeavesHealthyConfigAlone(t *testing.T) {
 	in := `{"apiBase":"` + ProxyBaseURL + `/v1","theme":"dark"}`
 	out, changed, err := repairBaseURL([]byte(in))
@@ -285,10 +285,10 @@ func TestRepairLeavesHealthyConfigAlone(t *testing.T) {
 // (JSONC) must all survive. The old unmarshal→MarshalIndent path destroyed these.
 func TestRepairIsSurgicalAndPreservesFormattingAndComments(t *testing.T) {
 	in := `{
-  // oikos routes Continue through the local proxy
+  // essaim routes Continue through the local proxy
   "models": [
     {
-      "title": "oikos",
+      "title": "essaim",
       "apiBase": "https://api.openai.com/v1",   /* clobbered by an IDE update */
       "provider": "openai"
     }
@@ -305,7 +305,7 @@ func TestRepairIsSurgicalAndPreservesFormattingAndComments(t *testing.T) {
 	s := string(out)
 	// The value was re-pointed…
 	if !strings.Contains(s, ProxyBaseURL+"/v1") {
-		t.Fatalf("apiBase not re-pointed at oikos:\n%s", s)
+		t.Fatalf("apiBase not re-pointed at essaim:\n%s", s)
 	}
 	if strings.Contains(s, "api.openai.com") {
 		t.Fatalf("clobbered vendor url should be gone:\n%s", s)
@@ -313,9 +313,9 @@ func TestRepairIsSurgicalAndPreservesFormattingAndComments(t *testing.T) {
 	// …and EVERYTHING else is byte-preserved: comments, key order, indentation,
 	// unrelated keys. The only delta is the apiBase value.
 	for _, must := range []string{
-		"// oikos routes Continue through the local proxy",
+		"// essaim routes Continue through the local proxy",
 		"/* clobbered by an IDE update */",
-		`"title": "oikos"`,
+		`"title": "essaim"`,
 		`"provider": "openai"`,
 		`"tabAutocompleteModel": { "title": "keep-me" }`,
 	} {

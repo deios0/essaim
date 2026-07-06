@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
-	"oikos/internal/upstream"
+	"essaim/internal/rules"
+	"essaim/internal/upstream"
 )
 
 // echoUpstream records the request body the upstream received, so tests can
-// assert exactly what oikos forwarded.
+// assert exactly what essaim forwarded.
 func echoUpstream(t *testing.T, got *[]byte) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -73,8 +73,8 @@ func TestEndToEndInjectionReachesUpstream(t *testing.T) {
 	if rec.Code != 200 {
 		t.Fatalf("status: %d", rec.Code)
 	}
-	if !strings.Contains(string(got), "<!-- oikos:rules:begin v=1 -->") {
-		t.Fatalf("upstream did not receive an injected oikos block:\n%s", got)
+	if !strings.Contains(string(got), "<!-- essaim:rules:begin v=1 -->") {
+		t.Fatalf("upstream did not receive an injected essaim block:\n%s", got)
 	}
 	if !strings.Contains(string(got), "Always use the PostgreSQL database, never MySQL.") {
 		t.Fatalf("injected block missing the rule body:\n%s", got)
@@ -86,7 +86,7 @@ func TestEndToEndInjectionReachesUpstream(t *testing.T) {
 }
 
 // Test 29: failopen_deadline_forwards_original — a build that overruns the
-// deadline ⇒ the upstream sees the EXACT original bytes (no oikos block), the
+// deadline ⇒ the upstream sees the EXACT original bytes (no essaim block), the
 // response is 200 (never 500), and /health.degraded == true.
 func TestFailOpenDeadlineForwardsOriginal(t *testing.T) {
 	var got []byte
@@ -108,7 +108,7 @@ func TestFailOpenDeadlineForwardsOriginal(t *testing.T) {
 	if rec.Code != 200 {
 		t.Fatalf("must never 500 on overrun, got %d", rec.Code)
 	}
-	if strings.Contains(string(got), "oikos:rules:begin") {
+	if strings.Contains(string(got), "essaim:rules:begin") {
 		t.Fatalf("overrun must forward original WITHOUT injection:\n%s", got)
 	}
 	if string(got) != orig {
@@ -167,8 +167,8 @@ func TestFailOpenForwardsByteExactWithStaleBlock(t *testing.T) {
 	s.inj.deadline = 1 * time.Millisecond
 	s.inj.buildHook = func() { time.Sleep(30 * time.Millisecond) }
 
-	// A request that already carries a stale oikos block.
-	orig := `{"messages":[{"role":"system","content":"<!-- oikos:rules:begin v=1 -->\nstale\n<!-- oikos:rules:end -->"},{"role":"user","content":"x"}]}`
+	// A request that already carries a stale essaim block.
+	orig := `{"messages":[{"role":"system","content":"<!-- essaim:rules:begin v=1 -->\nstale\n<!-- essaim:rules:end -->"},{"role":"user","content":"x"}]}`
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(orig))
 	s.Handler().ServeHTTP(rec, req)

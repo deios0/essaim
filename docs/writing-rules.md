@@ -1,7 +1,7 @@
 # Writing rules that actually fire
 
-A rule only helps if oikos injects it into the right request. Right now (M4)
-matching is **lexical**: oikos injects a rule when the request shares vocabulary
+A rule only helps if essaim injects it into the right request. Right now (M4)
+matching is **lexical**: essaim injects a rule when the request shares vocabulary
 with the rule's text. If your rule and the request have no words in common, the
 rule stays out of the way — which is the point (an off-topic request goes through
 byte-for-byte), but it also means a rule worded too narrowly can miss requests it
@@ -45,7 +45,7 @@ Now the words **database**, **data store**, **persistence**, **relational**,
 - **Include the synonyms people actually type.** "database / data store / DB",
   "test / spec", "deploy / release / ship". One of them will match.
 - **A sentence or two beats a fragment.** More on-topic words = more requests it
-  catches. (oikos still injects only the *relevant* rules, ranked, within a byte
+  catches. (essaim still injects only the *relevant* rules, ranked, within a byte
   budget — being a bit verbose in a rule body doesn't bloat your prompts.)
 - **Filler doesn't count.** Common words ("always", "use", "the", "should") and
   pure imperatives carry no topical signal — they're ignored when deciding
@@ -53,7 +53,7 @@ Now the words **database**, **data store**, **persistence**, **relational**,
 
 ## Why it works this way
 
-oikos scores each rule against your request by how many of the request's
+essaim scores each rule against your request by how many of the request's
 *distinctive* words the rule's text covers, and injects only the ones over a
 relevance floor. That keeps an unrelated rule ("use Postgres") out of an
 unrelated request ("what's the weather") instead of stuffing every rule into

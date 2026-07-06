@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // Bridge finding #5: a multi-MB payload must inject under the in-mem budget,
@@ -102,14 +102,14 @@ func TestToolCallAlternationPreserved(t *testing.T) {
 }
 
 // Bridge finding #4: client-truncation → no stacking. If the client truncated
-// history and a prior block is GONE (the user resends without it), oikos must
+// history and a prior block is GONE (the user resends without it), essaim must
 // not double-inject — it always rebuilds to exactly one block. (And if a block
 // IS present it is stripped first.) Either way: exactly one block, never stacked.
 func TestClientTruncationNoStack(t *testing.T) {
 	// Turn 1: inject into a fresh history.
 	res1, _ := Build([]byte(`{"messages":[{"role":"system","content":"S"},{"role":"user","content":"u1"}]}`),
 		[]rules.Rule{mkRule("a", "A", "ba")}, []string{"a"})
-	// Turn 2: client TRUNCATED — sends history WITHOUT the prior oikos block
+	// Turn 2: client TRUNCATED — sends history WITHOUT the prior essaim block
 	// (only the original system+user, plus a new user turn).
 	truncated := []byte(`{"messages":[{"role":"system","content":"S"},{"role":"user","content":"u1"},{"role":"user","content":"u2"}]}`)
 	res2, err := Build(truncated, []rules.Rule{mkRule("a", "A", "ba")}, []string{"a"})
@@ -123,9 +123,9 @@ func TestClientTruncationNoStack(t *testing.T) {
 }
 
 // Capture snapshot (spec §4.1): the pre-injection snapshot CleanMessagesJSON must
-// be oikos-FREE (no OIKOS_BEGIN) even when the inbound history carries a prior
+// be essaim-FREE (no ESSAIM_BEGIN) even when the inbound history carries a prior
 // block (echo). MatchedRuleIDs travel out-of-band (not in the messages text).
-func TestCaptureSnapshotIsOikosFree(t *testing.T) {
+func TestCaptureSnapshotIsEssaimFree(t *testing.T) {
 	// Turn 1 injects a block; turn 2 receives it echoed back.
 	res1, _ := Build([]byte(`{"messages":[{"role":"user","content":"hi"}]}`),
 		[]rules.Rule{mkRule("a", "A", "ALWAYS_USE_TABS")}, []string{"a"})
@@ -133,7 +133,7 @@ func TestCaptureSnapshotIsOikosFree(t *testing.T) {
 
 	snap := res2.Snapshot
 	if strings.Contains(string(snap.CleanMessagesJSON), begin) {
-		t.Fatalf("capture snapshot must be oikos-free, but contains the sentinel:\n%s", snap.CleanMessagesJSON)
+		t.Fatalf("capture snapshot must be essaim-free, but contains the sentinel:\n%s", snap.CleanMessagesJSON)
 	}
 	if strings.Contains(string(snap.CleanMessagesJSON), "ALWAYS_USE_TABS") {
 		t.Fatalf("capture snapshot must not contain the injected rule body")

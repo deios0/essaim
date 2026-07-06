@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // Codex BLOCKER: stripManagedBlock used unanchored strings.Index. On the diverged
@@ -17,7 +17,7 @@ func TestP0UnwireInlineSentinelNoCorruption(t *testing.T) {
 	path := filepath.Join(dir, "CLAUDE.md")
 
 	// backup = pristine WITH an inline sentinel in prose (user documented it).
-	pristine := "# Doc\n\nExample marker `" + rules.OIKOS_BEGIN + "` shown inline.\n"
+	pristine := "# Doc\n\nExample marker `" + rules.ESSAIM_BEGIN + "` shown inline.\n"
 	if err := os.WriteFile(path+backupSuffix, []byte(pristine), 0o644); err != nil {
 		t.Fatal(err)
 	}

@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
-	"oikos/internal/rules"
+	"essaim/internal/config"
+	"essaim/internal/rules"
 )
 
-// `oikos brain pull` fetches the zone rules and mirrors them into the vault's
-// _brain/ dir so a subsequent `oikos emit` writes them into the native files.
+// `essaim brain pull` fetches the zone rules and mirrors them into the vault's
+// _brain/ dir so a subsequent `essaim emit` writes them into the native files.
 func TestRunBrainPullMirrorsZoneRules(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Brain-Key") != "bkey" {
@@ -27,7 +27,7 @@ func TestRunBrainPullMirrorsZoneRules(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	vault := filepath.Join(dir, "vault")
 	_ = os.MkdirAll(vault, 0o755)
 	kf := filepath.Join(dir, "brain.key")
@@ -52,7 +52,7 @@ func TestRunBrainPullMirrorsZoneRules(t *testing.T) {
 
 // Not joined to a Brain and no flags → clear error, no network.
 func TestRunBrainPullNotJoined(t *testing.T) {
-	t.Setenv("OIKOS_CONFIG", filepath.Join(t.TempDir(), "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(t.TempDir(), "config.json"))
 	var out bytes.Buffer
 	if err := runBrain([]string{"pull"}, &out); err == nil {
 		t.Fatal("runBrain pull with no Brain join returned nil; want an error")

@@ -1,10 +1,10 @@
-// Package config persists the small amount of first-run state oikos needs to
+// Package config persists the small amount of first-run state essaim needs to
 // remember between launches: which AI provider was chosen, which vault holds the
 // corpus, and which tools have been wired. It is the store the /setup POST
-// handlers write and `oikos serve` reads for first-run detection.
+// handlers write and `essaim serve` reads for first-run detection.
 //
 // Purity: the file is written ONLY by an explicit user action (the /setup POST
-// or `oikos wire`). A binary that is installed and never configured writes
+// or `essaim wire`). A binary that is installed and never configured writes
 // nothing here. The store holds a key *location* (provider choice), never the
 // key itself — secrets live in the OS keychain (internal/secret).
 package config
@@ -23,12 +23,12 @@ import (
 // own change, and the second Save clobbers the first — a lost update (e.g. wiring
 // two tools at once drops one). Update below holds this lock across the whole
 // cycle so mutations are serialized IN-PROCESS. Cross-process coordination
-// (two `oikos` binaries writing the same config.json at once) is out of scope —
+// (two `essaim` binaries writing the same config.json at once) is out of scope —
 // the atomic temp+rename in Save keeps each individual write from corrupting the
 // file, but a lost update across processes would need file locking.
 var mu sync.Mutex
 
-// WiredTool records one tool oikos has pointed at the local proxy and the
+// WiredTool records one tool essaim has pointed at the local proxy and the
 // channel it was wired through ("base_url" for proxy-routed tools, "native_file"
 // for tools that learn via a managed block in CLAUDE.md/AGENTS.md).
 type WiredTool struct {
@@ -38,8 +38,8 @@ type WiredTool struct {
 	// NativeFile is the absolute path to the managed native file (only set when
 	// Channel == "native_file").
 	NativeFile string `json:"native_file,omitempty"`
-	// OriginalBaseURL is the base_url value the tool's IDE config held BEFORE oikos
-	// first wired/healed it (only meaningful when Channel == "base_url"). `oikos
+	// OriginalBaseURL is the base_url value the tool's IDE config held BEFORE essaim
+	// first wired/healed it (only meaningful when Channel == "base_url"). `essaim
 	// unwire` restores exactly this value so the user is returned to THEIR real
 	// upstream (their own gateway, a non-OpenAI provider), not a hardcoded OpenAI
 	// default. Empty means it was unknown at wire time (no config file yet, or the
@@ -55,10 +55,10 @@ type Config struct {
 	// pasted) or "local" (an auto-detected Ollama/LM Studio is used). "" means
 	// not yet chosen.
 	Provider string `json:"provider,omitempty"`
-	// VaultDir is the corpus directory (the OIKOS_VAULT the learning loop and
+	// VaultDir is the corpus directory (the ESSAIM_VAULT the learning loop and
 	// injection layer use). "" means not yet chosen.
 	VaultDir string `json:"vault_dir,omitempty"`
-	// WiredTools is the set of tools the user has wired to oikos.
+	// WiredTools is the set of tools the user has wired to essaim.
 	WiredTools []WiredTool `json:"wired_tools,omitempty"`
 	// Bus is the opt-in aibus join (nil = not joined; default-off, no bus). It
 	// records WHERE to reach the bus and WHICH zone key file to present — never
@@ -119,9 +119,9 @@ func (c Config) UpsertTool(t WiredTool) Config {
 	return out
 }
 
-// Path resolves the config file path. OIKOS_CONFIG overrides it outright (used
+// Path resolves the config file path. ESSAIM_CONFIG overrides it outright (used
 // by tests and headless/server deployments). Otherwise it is
-// <os.UserConfigDir>/oikos/config.json — a cross-platform location (no
+// <os.UserConfigDir>/essaim/config.json — a cross-platform location (no
 // hostname/machine-id derivation, no platform-divergent code; spec N11).
 //
 // os.UserConfigDir resolves the right per-user, no-admin base on every OS:
@@ -134,11 +134,11 @@ func Path() (string, error) {
 }
 
 // resolvePath is the platform-injectable core of Path. getenv reads the
-// OIKOS_CONFIG override; userConfigDir supplies the per-user base; sep is the
+// ESSAIM_CONFIG override; userConfigDir supplies the per-user base; sep is the
 // path separator to join with ("\\" on Windows, "/" elsewhere). Splitting it out
-// lets a test prove the Windows %AppData%\oikos\config.json layout on any host.
+// lets a test prove the Windows %AppData%\essaim\config.json layout on any host.
 func resolvePath(getenv func(string) string, userConfigDir func() (string, error), sep string) (string, error) {
-	if p := getenv("OIKOS_CONFIG"); p != "" {
+	if p := getenv("ESSAIM_CONFIG"); p != "" {
 		return p, nil
 	}
 	dir, err := userConfigDir()
@@ -148,7 +148,7 @@ func resolvePath(getenv func(string) string, userConfigDir func() (string, error
 	// Join with the supplied separator (filepath.Join would always use the host
 	// separator, which on a Linux test host can't model a Windows result).
 	dir = strings.TrimRight(dir, sep)
-	return dir + sep + "oikos" + sep + "config.json", nil
+	return dir + sep + "essaim" + sep + "config.json", nil
 }
 
 // Load reads the persisted config. A missing file is NOT an error — it returns a

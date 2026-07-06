@@ -88,7 +88,7 @@ func TestSyncPullQuarantinesRemoteAndPublishesLocal(t *testing.T) {
 		VaultDir:  localVault,
 		RemoteURL: remote,
 		WorkRoot:  t.TempDir(),
-		Message:   "oikos sync",
+		Message:   "essaim sync",
 	}
 	res, err := Sync(opt)
 	if err != nil {

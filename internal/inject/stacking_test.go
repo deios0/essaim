@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // 8.C — Multi-turn / stacking --------------------------------------------------
 
 // Test 8: strip_prior_block_no_stacking — feed turn-1 output back + new match ⇒
-// exactly ONE oikos block.
+// exactly ONE essaim block.
 func TestStripPriorBlockNoStacking(t *testing.T) {
 	body := []byte(`{"messages":[{"role":"user","content":"hi"}]}`)
 	res1, _ := Build(body, []rules.Rule{mkRule("a", "A", "ba")}, []string{"a"})
@@ -19,7 +19,7 @@ func TestStripPriorBlockNoStacking(t *testing.T) {
 		t.Fatalf("turn2 Build: %v", err)
 	}
 	if n := countBeginInInstruction(t, res2.Body); n != 1 {
-		t.Fatalf("want exactly 1 oikos block after re-inject, got %d\nbody=%s", n, res2.Body)
+		t.Fatalf("want exactly 1 essaim block after re-inject, got %d\nbody=%s", n, res2.Body)
 	}
 }
 
@@ -51,7 +51,7 @@ func TestStripChangedPayloadNoStacking(t *testing.T) {
 }
 
 // Test 9: idempotent_repeat_5_turns — apply Inject 5×, feeding each output back
-// (plus a growing user tail) ⇒ every output has exactly one oikos block; the
+// (plus a growing user tail) ⇒ every output has exactly one essaim block; the
 // client tail is never mutated.
 func TestIdempotentRepeat5Turns(t *testing.T) {
 	body := []byte(`{"messages":[{"role":"system","content":"S"},{"role":"user","content":"u0"}]}`)
@@ -102,7 +102,7 @@ func TestEmptyMatchStillStrips(t *testing.T) {
 // Test 11: strip_collapses_multiple_stale_blocks.
 func TestStripCollapsesMultipleStaleBlocks(t *testing.T) {
 	blk := begin + "\nstale\n" + end
-	// Three separate oikos blocks + user.
+	// Three separate essaim blocks + user.
 	body := []byte(`{"messages":[` +
 		`{"role":"system","content":` + jsonStr(blk) + `},` +
 		`{"role":"system","content":` + jsonStr(blk) + `},` +
@@ -189,7 +189,7 @@ func TestMultimodalInstructionContentPreserved(t *testing.T) {
 }
 
 // Test 15b: user_pasted_full_block_not_corrupted — a USER message whose body is
-// an ENTIRE OIKOS_BEGIN…OIKOS_END block (dogfood paste) ⇒ preserved
+// an ENTIRE ESSAIM_BEGIN…ESSAIM_END block (dogfood paste) ⇒ preserved
 // byte-identical (factor 1 fails: not an instruction role; never substring scan).
 func TestUserPastedFullBlockNotCorrupted(t *testing.T) {
 	pasted := begin + "\n- [H] Some rule: body\n" + end
@@ -226,7 +226,7 @@ func TestPartialSentinelSafe(t *testing.T) {
 		}
 		out := parseOut(t, res.Body)
 		// The partial-sentinel system message must be preserved (not recognized
-		// as a complete oikos block, so not stripped).
+		// as a complete essaim block, so not stripped).
 		preserved := false
 		for _, m := range out {
 			if m.Role == "system" && m.Content == c {
@@ -245,7 +245,7 @@ func TestPartialSentinelSafe(t *testing.T) {
 
 // F-E (A-5.4 role-first strip): the recognizer reads ROLE FIRST and never
 // strips a non-instruction element — even one whose content is byte-for-byte a
-// COMPLETE oikos block (both sentinels). An assistant message echoing the exact
+// COMPLETE essaim block (both sentinels). An assistant message echoing the exact
 // block must survive the strip: the role gate (factor 1), evaluated first, is
 // what protects it; the sentinel anchors alone would otherwise match. This pins
 // the binding A-5.4 ordering (role before any content/sentinel check).

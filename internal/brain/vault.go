@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// brainMirrorDir is the vault subdir oikos owns for the Brain-zone mirror. It is
+// brainMirrorDir is the vault subdir essaim owns for the Brain-zone mirror. It is
 // MANAGED (rewritten on every pull) — never hand-edit it; put your own rules in
 // the vault root. The existing emit path loads it (LoadVault recurses) and ranks
 // these alongside the user's own rules.
@@ -22,7 +22,7 @@ var safeID = regexp.MustCompile(`[^a-zA-Z0-9_-]+`)
 // touched — the user's own vault rules are never altered.
 func WriteVault(vaultDir string, rs []Rule) error {
 	if strings.TrimSpace(vaultDir) == "" {
-		return fmt.Errorf("oikos brain: no vault directory")
+		return fmt.Errorf("essaim brain: no vault directory")
 	}
 	dir := filepath.Join(vaultDir, brainMirrorDir)
 	// Replace the mirror: remove it, then rewrite. RemoveAll on a fresh/missing

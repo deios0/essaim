@@ -1,25 +1,25 @@
 <div align="center">
 
-# oikos
+# essaim
 
 ### Stop running your AI in a silo.
 
-**oikos puts your AI on a shared bus — where your tools, your agents, and your teammates
+**essaim puts your AI on a shared bus — where your tools, your agents, and your teammates
 talk to each other, coordinate in real time, and learn together.** Correct something once
 and it spreads: to your other tools, to your agents, to your whole team. A single white,
 BYOK, pure-Go binary — inert until you use it, nothing leaves your machine unless you say so.
 
-*Not another local notes app. There are hundreds of thousands of those. oikos is the one
+*Not another local notes app. There are hundreds of thousands of those. essaim is the one
 that's **connected**.*
 
-[![release](https://img.shields.io/github/v/release/deios0/oikos?color=0b7cc4&label=release)](https://github.com/deios0/oikos/releases)
+[![release](https://img.shields.io/github/v/release/deios0/essaim?color=0b7cc4&label=release)](https://github.com/deios0/essaim/releases)
 [![license](https://img.shields.io/badge/license-Apache--2.0-0b7cc4)](LICENSE)
-[![platforms](https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20Windows-555)](https://github.com/deios0/oikos/releases)
+[![platforms](https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20Windows-555)](https://github.com/deios0/essaim/releases)
 [![pure Go](https://img.shields.io/badge/pure%20Go-CGO__free%20static%20binary-00ADD8)](#architecture)
 [![phone-home](https://img.shields.io/badge/phone--home-none-1a7f43)](#three-locked-invariants)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/deios0/oikos/master/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/deios0/essaim/master/scripts/install.sh | sh
 ```
 
 </div>
@@ -30,7 +30,7 @@ Every AI tool today is an island. Cursor doesn't know what you told Claude Code.
 agents don't coordinate. Your teammate re-learns the same lesson you learned last week.
 Each tool forgets, and none of them talk to each other — so knowledge never compounds.
 
-**oikos is the connective layer.** It gives your AI a shared bus and a shared, learning
+**essaim is the connective layer.** It gives your AI a shared bus and a shared, learning
 memory:
 
 - **Talk.** A realtime event bus (**aibus**) so your tools, background agents, and
@@ -53,7 +53,7 @@ and it becomes a shared brain for your agents and your team.
 ## How it works
 
 ```
-your AI corrections ──▶ oikos vault (editable .md rules, ranked) ──▶ AGENTS.md
+your AI corrections ──▶ essaim vault (editable .md rules, ranked) ──▶ AGENTS.md
                                                                      CLAUDE.md
                                                                      GEMINI.md
 ```
@@ -66,11 +66,11 @@ your AI corrections ──▶ oikos vault (editable .md rules, ranked) ──▶
      your exchanges silently).
 
    Drafts are promoted only on independent reinforcement. **Credentials are never persisted.**
-2. **Enforces them across tools.** `oikos emit` writes the ranked, relevant rules into your
+2. **Enforces them across tools.** `essaim emit` writes the ranked, relevant rules into your
    `AGENTS.md` (and `CLAUDE.md` / `GEMINI.md` mirrors) — on demand, **no proxy needed.** Only
-   your own content is touched: oikos owns exactly one fenced region
-   (`<!-- oikos:rules:begin … end -->`); everything you wrote by hand is preserved byte-for-byte.
-3. **Keeps it current.** Teach a new correction, re-run `oikos emit` (or leave the optional
+   your own content is touched: essaim owns exactly one fenced region
+   (`<!-- essaim:rules:begin … end -->`); everything you wrote by hand is preserved byte-for-byte.
+3. **Keeps it current.** Teach a new correction, re-run `essaim emit` (or leave the optional
    live proxy on), and every tool reflects the latest ranked set. A static file you maintain
    by hand can't do that.
 
@@ -83,16 +83,16 @@ across your agents and your team — everyone's corrections compounding into one
 
 ```bash
 # macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/deios0/oikos/master/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/deios0/essaim/master/scripts/install.sh | sh
 
 # Windows (PowerShell)
-irm https://raw.githubusercontent.com/deios0/oikos/master/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/deios0/essaim/master/scripts/install.ps1 | iex
 ```
 
 Downloads the signed static binary for your platform into a `PATH` dir that needs no `sudo`
 (e.g. `~/.local/bin`), verifies its SHA-256, and does nothing else — no service, no runtime
-state. Or grab a binary from [Releases](https://github.com/deios0/oikos/releases), or
-`go install github.com/deios0/oikos/cmd/oikos@latest`.
+state. Or grab a binary from [Releases](https://github.com/deios0/essaim/releases), or
+`go install github.com/deios0/essaim/cmd/essaim@latest`.
 
 <details>
 <summary><b>Verify the download</b> (optional, recommended)</summary>
@@ -111,16 +111,16 @@ sha256sum -c SHA256SUMS --ignore-missing        # then check your binary against
 ## Quickstart
 
 ```bash
-oikos init                                   # seed a vault + a starter rule
-oikos emit --file claude-code=./CLAUDE.md \
+essaim init                                   # seed a vault + a starter rule
+essaim emit --file claude-code=./CLAUDE.md \
            --file codex=./AGENTS.md          # write the ranked block into your files
-# …or, with tools wired via `oikos wire`, just:
-oikos emit                                   # uses the vault + native files from config
+# …or, with tools wired via `essaim wire`, just:
+essaim emit                                   # uses the vault + native files from config
 ```
 
-That's the local core — solo, no proxy, no service, no account. `oikos emit` reads your vault
-and writes your native rules files. Drop more `.md` rules in (or let oikos learn them), re-run
-`oikos emit`, and every tool stays current. When you want your agents and team in the loop,
+That's the local core — solo, no proxy, no service, no account. `essaim emit` reads your vault
+and writes your native rules files. Drop more `.md` rules in (or let essaim learn them), re-run
+`essaim emit`, and every tool stays current. When you want your agents and team in the loop,
 [join a bus](#team-tier--the-shared-bus).
 
 ---
@@ -130,38 +130,38 @@ and writes your native rules files. Drop more `.md` rules in (or let oikos learn
 If you *want* real-time capture, run the optional local proxy:
 
 ```
-your AI tool ──▶ oikos · 127.0.0.1:4141 ──▶ inject your rules ──▶ your model
+your AI tool ──▶ essaim · 127.0.0.1:4141 ──▶ inject your rules ──▶ your model
                                                                       │
               learns the correction ◀── verbatim stream back ◀───────┘
 ```
 
-- **`oikos serve`** is a white, BYOK, single-binary loopback proxy. Point any
-  OpenAI-compatible tool's base URL at `http://127.0.0.1:4141` and oikos (a) injects your
+- **`essaim serve`** is a white, BYOK, single-binary loopback proxy. Point any
+  OpenAI-compatible tool's base URL at `http://127.0.0.1:4141` and essaim (a) injects your
   relevant rules per request and (b) captures your corrections **live**, the moment you make
-  them — no manual `oikos emit`.
+  them — no manual `essaim emit`.
 - **Relevant-only, fail-open.** Only rules sharing vocabulary with the request are injected;
   an off-topic request is forwarded **byte-for-byte**, untouched. The intercept is in-memory
   and **fail-open under 15 ms** — it never corrupts or delays a request.
-- It's strictly opt-in. The default path — `oikos emit` writing `AGENTS.md` — needs no proxy,
+- It's strictly opt-in. The default path — `essaim emit` writing `AGENTS.md` — needs no proxy,
   no key, and no model.
 
 Live mode is the same engine, just continuous instead of on-demand. The file it writes is
-byte-identical to what `oikos emit` produces.
+byte-identical to what `essaim emit` produces.
 
 ---
 
 ## Team tier — the shared bus
 
 Everything above is **free, local, and needs no account.** But a solo vault is only half the
-idea. Point oikos at an **oikos server** and it becomes a team's shared brain:
+idea. Point essaim at an **essaim server** and it becomes a team's shared brain:
 
 ```bash
 # join your team's shared rule store + coordination bus, in one command
-oikos onboard \
+essaim onboard \
   --endpoint      https://bus.your-team.example/aibus/events \
-  --key-file      ~/.config/oikos/keys/bus.key \
+  --key-file      ~/.config/essaim/keys/bus.key \
   --brain-endpoint https://brain.your-team.example \
-  --brain-key-file ~/.config/oikos/keys/brain.key \
+  --brain-key-file ~/.config/essaim/keys/brain.key \
   --file claude-code=./CLAUDE.md
 ```
 
@@ -184,23 +184,23 @@ oikos onboard \
   operate one. *(Hosted tier is rolling out — no public URL yet; get in touch.)*
 
 The **local client stays free and open** (this repo, Apache-2.0). The **server** — the
-Brain + bus + model-routing tier that turns oikos into team infrastructure — is the
+Brain + bus + model-routing tier that turns essaim into team infrastructure — is the
 paid / self-managed layer. Same white binary for everyone; capability comes from the key you
 add. *(Model routing / Bridge integrates as a separate MCP, and can be used on any project.)*
 
-> This is the open-core line: the tool is free forever; the **team server** is where oikos
+> This is the open-core line: the tool is free forever; the **team server** is where essaim
 > becomes an "AI OS" for an organization — bring your own, or let us host it.
 
 ---
 
-## Why oikos, honestly
+## Why essaim, honestly
 
-|                                  | bare `AGENTS.md` | oikos | proxy-only tools |
+|                                  | bare `AGENTS.md` | essaim | proxy-only tools |
 |----------------------------------|:---:|:---:|:---:|
 | One rule → all tools             | ✅ (the standard) | ✅ (rides it) | ✅ |
 | **Auto-written from corrections**| ❌ you hand-write it | ✅ | ⚠️ proxy-only |
 | **Stays current as you teach**   | ❌ goes stale | ✅ | ✅ (while proxy runs) |
-| Works with **no proxy running**  | ✅ | ✅ (`oikos emit`) | ❌ proxy is the product |
+| Works with **no proxy running**  | ✅ | ✅ (`essaim emit`) | ❌ proxy is the product |
 | Nothing leaves your machine      | ✅ | ✅ (zero phone-home) | ⚠️ hosted/cloud options |
 | Pure Go, **single static binary**| n/a | ✅ (CGO-free) | ❌ |
 | Quarantine for unproven rules    | ❌ | ✅ (`_inbox/` drafts, reinforce-to-promote) | varies |
@@ -227,11 +227,11 @@ server *you* explicitly join.
 ## Three locked invariants
 
 - **Purity / "white".** Inert until *you* act. No state until first use, no socket until you
-  `join`/`serve`. **Zero phone-home** — `oikos emit` touches only your local files.
+  `join`/`serve`. **Zero phone-home** — `essaim emit` touches only your local files.
 - **< 15 ms, fail-open (live mode).** If anything is slow or ambiguous, the request passes
   through verbatim. The proxy never breaks a request.
 - **Owns one fenced region, nothing else.** Every emit replaces only the
-  `<!-- oikos:rules:begin … end -->` block (backed up on first write, atomic, idempotent).
+  `<!-- essaim:rules:begin … end -->` block (backed up on first write, atomic, idempotent).
   Your hand-written content is never touched, and a path containing a tracked credential is
   refused outright.
 
@@ -239,7 +239,7 @@ server *you* explicitly join.
 
 ## Writing rules (so they actually fire)
 
-Selection is **relevance-gated**: oikos emits/injects a rule only when it shares vocabulary
+Selection is **relevance-gated**: essaim emits/injects a rule only when it shares vocabulary
 with the request (a lexical floor, augmented with curated concept expansion). So a rule has
 to contain the words of the requests you want it to catch.
 
@@ -270,7 +270,7 @@ Full guide: [`docs/writing-rules.md`](docs/writing-rules.md).
 - BYOK upstream (live mode only): OpenRouter via key, or an auto-detected local Ollama / LM Studio.
 
 ```
-cmd/oikos/        the CLI — emit · serve · init · wire/unwire · sync · join/leave/bus/brain · onboard
+cmd/essaim/        the CLI — emit · serve · init · wire/unwire · sync · join/leave/bus/brain · onboard
 internal/
   emit/           the NativeFileEmitter (CLAUDE.md / AGENTS.md / GEMINI.md)
   rules/          the graded rule index, relevance floor, eager emitter
@@ -298,7 +298,7 @@ bash scripts/demo-injection.sh      # live mode: a rule injected + an off-topic 
 
 ## Licensing
 
-The **oikos tool** in this repository — the rule store, injection, learns-back extraction,
+The **essaim tool** in this repository — the rule store, injection, learns-back extraction,
 the native-file emitter, the optional proxy, and the opt-in team-server clients — is licensed
 under the **Apache License 2.0** (see [`LICENSE`](LICENSE)) and is **free forever**. The
 optional **team server** (hosted Brain + bus + model routing) is a separate, managed layer.

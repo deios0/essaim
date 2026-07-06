@@ -11,7 +11,7 @@ import (
 // installPS1 resolves scripts/install.ps1 relative to this test file.
 func installPS1(t *testing.T) string {
 	t.Helper()
-	// cmd/oikos → repo root is two levels up.
+	// cmd/essaim → repo root is two levels up.
 	p, err := filepath.Abs(filepath.Join("..", "..", "scripts", "install.ps1"))
 	if err != nil {
 		t.Fatalf("abs: %v", err)
@@ -53,7 +53,7 @@ func runPS1DryRun(t *testing.T, env ...string) string {
 		t.Skip("no PowerShell (pwsh/powershell) available; static invariants still checked")
 	}
 	cmd := exec.Command(pwsh, "-NoProfile", "-NonInteractive", "-File", installPS1(t))
-	cmd.Env = append(os.Environ(), "OIKOS_INSTALL_DRYRUN=1")
+	cmd.Env = append(os.Environ(), "ESSAIM_INSTALL_DRYRUN=1")
 	cmd.Env = append(cmd.Env, env...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -63,8 +63,8 @@ func runPS1DryRun(t *testing.T, env ...string) string {
 }
 
 func TestPS1DryRunResolvesWindowsAmd64URL(t *testing.T) {
-	out := runPS1DryRun(t, "OIKOS_OS=windows", "OIKOS_ARCH=amd64", "OIKOS_VERSION=latest")
-	if !strings.Contains(out, "oikos_windows_amd64.exe") {
+	out := runPS1DryRun(t, "ESSAIM_OS=windows", "ESSAIM_ARCH=amd64", "ESSAIM_VERSION=latest")
+	if !strings.Contains(out, "essaim_windows_amd64.exe") {
 		t.Fatalf("dry-run should resolve the windows/amd64 .exe asset:\n%s", out)
 	}
 	if !strings.Contains(out, "/latest/download/") {
@@ -73,14 +73,14 @@ func TestPS1DryRunResolvesWindowsAmd64URL(t *testing.T) {
 	if !strings.Contains(out, "127.0.0.1:4141/setup") {
 		t.Fatalf("dry-run should print the optional live-mode setup URL:\n%s", out)
 	}
-	if !strings.Contains(out, "oikos emit") {
-		t.Fatalf("dry-run should lead with the standalone emit step (oikos emit):\n%s", out)
+	if !strings.Contains(out, "essaim emit") {
+		t.Fatalf("dry-run should lead with the standalone emit step (essaim emit):\n%s", out)
 	}
 }
 
 func TestPS1DryRunArm64AndPinnedVersion(t *testing.T) {
-	out := runPS1DryRun(t, "OIKOS_OS=windows", "OIKOS_ARCH=arm64", "OIKOS_VERSION=v9.9.9")
-	if !strings.Contains(out, "oikos_windows_arm64.exe") {
+	out := runPS1DryRun(t, "ESSAIM_OS=windows", "ESSAIM_ARCH=arm64", "ESSAIM_VERSION=v9.9.9")
+	if !strings.Contains(out, "essaim_windows_arm64.exe") {
 		t.Fatalf("dry-run should resolve the windows/arm64 asset:\n%s", out)
 	}
 	if !strings.Contains(out, "/download/v9.9.9/") {
@@ -95,7 +95,7 @@ func TestPS1DryRunWritesNothing(t *testing.T) {
 	target := filepath.Join(dir, "would-be-install")
 	// OS/ARCH are forced so the test is host-independent: PROCESSOR_ARCHITECTURE
 	// is unset on the Linux CI host where pwsh runs cross-platform.
-	_ = runPS1DryRun(t, "OIKOS_OS=windows", "OIKOS_ARCH=amd64", "OIKOS_INSTALL_DIR="+target)
+	_ = runPS1DryRun(t, "ESSAIM_OS=windows", "ESSAIM_ARCH=amd64", "ESSAIM_INSTALL_DIR="+target)
 	if _, err := os.Stat(target); !os.IsNotExist(err) {
 		t.Fatalf("dry run must not create the install dir %s (stat err=%v)", target, err)
 	}
@@ -139,13 +139,13 @@ func TestPS1IsProxyAware(t *testing.T) {
 
 // TestPS1SupportsDryRun asserts the offline-testable dry-run gate exists.
 func TestPS1SupportsDryRun(t *testing.T) {
-	if !strings.Contains(ps1Body(t), "OIKOS_INSTALL_DRYRUN") {
-		t.Fatal("install.ps1 must support OIKOS_INSTALL_DRYRUN (offline-testable)")
+	if !strings.Contains(ps1Body(t), "ESSAIM_INSTALL_DRYRUN") {
+		t.Fatal("install.ps1 must support ESSAIM_INSTALL_DRYRUN (offline-testable)")
 	}
 }
 
 // TestPS1UsesNoAdminLocalAppData asserts the default install dir is the no-admin
-// %LOCALAPPDATA%\Programs\oikos location, not a machine-wide Program Files dir.
+// %LOCALAPPDATA%\Programs\essaim location, not a machine-wide Program Files dir.
 func TestPS1UsesNoAdminLocalAppData(t *testing.T) {
 	body := ps1Body(t)
 	if !strings.Contains(body, "LOCALAPPDATA") {

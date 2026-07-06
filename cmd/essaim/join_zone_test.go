@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // join must store the SERVER-enforced zone (read from an event), NOT the user's
@@ -24,7 +24,7 @@ func TestRunJoinStoresServerZoneNotLabel(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 	kf := filepath.Join(dir, "z.key")
 	_ = os.WriteFile(kf, []byte("bkey\n"), 0o600)
 

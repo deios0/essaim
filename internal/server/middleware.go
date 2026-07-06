@@ -26,7 +26,7 @@ func (s *Server) requireToken(next http.Handler) http.Handler {
 		got, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
 		if !ok || subtle.ConstantTimeCompare([]byte(got), []byte(s.token)) != 1 {
 			writeOpenAIError(w, http.StatusUnauthorized,
-				"missing or invalid oikos loopback token — run `oikosd wire` to configure your tool")
+				"missing or invalid essaim loopback token — run `essaimd wire` to configure your tool")
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -41,7 +41,7 @@ func writeOpenAIError(w http.ResponseWriter, code int, msg string) {
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"error": map[string]any{
 			"message": msg,
-			"type":    "oikos",
+			"type":    "essaim",
 		},
 	})
 }

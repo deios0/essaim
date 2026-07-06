@@ -10,7 +10,7 @@ import (
 
 // Pull fetches the zone's Brain rules via GET /api/rules?project=<p> with the
 // X-Brain-Key header, returning the rule bodies. The server derives+enforces the
-// zone from the key (business key -> business rules); oikos never asserts a zone.
+// zone from the key (business key -> business rules); essaim never asserts a zone.
 func TestPullFetchesZoneRules(t *testing.T) {
 	var gotKey, gotProject, gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

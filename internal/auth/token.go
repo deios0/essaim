@@ -20,16 +20,16 @@ const tokenKey = "loopback-token"
 // (headless Linux/WSL with no Secret Service — the go-keyring "failed to unlock
 // correct collection" case) AND no env-var fallback supplied a token. The caller
 // presents it as a clear one-liner and exits cleanly — it must NEVER surface as a
-// go-keyring panic/stack (P1-6b). The fix path is to set OIKOS_LOOPBACK_TOKEN.
+// go-keyring panic/stack (P1-6b). The fix path is to set ESSAIM_LOOPBACK_TOKEN.
 var ErrKeyringUnavailable = errors.New(
-	"oikos: OS keyring unavailable for the loopback token; set OIKOS_LOOPBACK_TOKEN to a 64-hex token (e.g. `openssl rand -hex 32`) to use --require-token headlessly")
+	"essaim: OS keyring unavailable for the loopback token; set ESSAIM_LOOPBACK_TOKEN to a 64-hex token (e.g. `openssl rand -hex 32`) to use --require-token headlessly")
 
 // LoadOrCreateToken returns the existing loopback token from the store, or
 // generates a fresh 32-byte (64-hex-char) token, persists it, and returns it.
 // It is idempotent: repeated calls against the same store return the same token.
 //
 // P1-6b: it degrades GRACEFULLY on a headless box. A non-empty Get result (e.g.
-// from an OIKOS_LOOPBACK_TOKEN env var via secret.EnvOrKeyring) is used as-is and
+// from an ESSAIM_LOOPBACK_TOKEN env var via secret.EnvOrKeyring) is used as-is and
 // no keyring write is attempted. Only when there is NO token AND the store cannot
 // persist one does it return ErrKeyringUnavailable — a clear, actionable error,
 // never the raw go-keyring failure (and never a panic).

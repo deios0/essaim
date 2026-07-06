@@ -11,7 +11,7 @@ import (
 // write state in the construction path.
 func TestPurityNoFilesWithoutKeyOrUse(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_DATA_DIR", dir)
+	t.Setenv("ESSAIM_DATA_DIR", dir)
 
 	_ = New("127.0.0.1:4141") // construct only; no key, no request
 

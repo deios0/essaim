@@ -1,9 +1,9 @@
 name: release
 
-# Publish a GitHub Release with the cross-compiled oikos binaries whenever a
+# Publish a GitHub Release with the cross-compiled essaim binaries whenever a
 # version tag (vX.Y.Z) is pushed. The release assets are EXACTLY what
 # scripts/install.sh{,.ps1} fetch + checksum-verify on a clean box:
-#   oikos_<os>_<arch>[.exe]   for every supported platform
+#   essaim_<os>_<arch>[.exe]   for every supported platform
 #   SHA256SUMS                one file covering all of them
 #
 # Triggered ONLY by a v* tag push — never on a branch push or PR.
@@ -53,5 +53,5 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes \
-            dist/oikos_* \
+            dist/essaim_* \
             dist/SHA256SUMS

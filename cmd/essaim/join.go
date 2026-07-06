@@ -9,21 +9,21 @@ import (
 	"strings"
 	"time"
 
-	"oikos/internal/bus"
-	"oikos/internal/config"
+	"essaim/internal/bus"
+	"essaim/internal/config"
 )
 
-// runJoin implements `oikos join`: OPT-IN, the only way oikos ever talks to a
+// runJoin implements `essaim join`: OPT-IN, the only way essaim ever talks to a
 // bus. It persists the membership (endpoint + zone + key-file reference) — never
 // the raw key. For a trusted user the key-file is an existing zone key. The zone
 // is informational; the server derives and enforces the real zone from the key.
 // An optional --brain-endpoint/--brain-key-file also joins a zone rule store in
 // the same command.
 //
-//	oikos join --endpoint https://bus.example.com/aibus/events \
-//	           --key-file ~/.config/oikos/keys/zone.key \
+//	essaim join --endpoint https://bus.example.com/aibus/events \
+//	           --key-file ~/.config/essaim/keys/zone.key \
 //	           [--brain-endpoint https://brain.example.com/api/brain-<zone> \
-//	            --brain-key-file ~/.config/oikos/keys/brain.key]
+//	            --brain-key-file ~/.config/essaim/keys/brain.key]
 //
 // AIBUS_URL / AIBUS_KEY env always override the stored values at use time (the
 // off-tailnet / wrong-zone escape hatch), so a join is a convenience default,
@@ -42,7 +42,7 @@ func runJoin(args []string, out io.Writer) error {
 	}
 	url := strings.TrimSpace(*endpoint)
 	if url == "" {
-		return fmt.Errorf("oikos join: --endpoint is required (the bus URL from your invite / your own bus)")
+		return fmt.Errorf("essaim join: --endpoint is required (the bus URL from your invite / your own bus)")
 	}
 	kf := strings.TrimSpace(*keyFile)
 
@@ -97,14 +97,14 @@ func runJoin(args []string, out io.Writer) error {
 	if z == "" {
 		z = "the zone your key enforces"
 	}
-	fmt.Fprintf(out, "oikos: joined %s (%s, server-enforced by your key). `oikos leave` to disconnect.\n", url, z)
+	fmt.Fprintf(out, "essaim: joined %s (%s, server-enforced by your key). `essaim leave` to disconnect.\n", url, z)
 	if brainURL != "" {
-		fmt.Fprintf(out, "oikos: also joined Brain %s — run `oikos brain pull` then `oikos emit` to include your zone's rules.\n", brainURL)
+		fmt.Fprintf(out, "essaim: also joined Brain %s — run `essaim brain pull` then `essaim emit` to include your zone's rules.\n", brainURL)
 	}
 	return nil
 }
 
-// runLeave implements `oikos leave`: clears the bus membership. oikos is back to
+// runLeave implements `essaim leave`: clears the bus membership. essaim is back to
 // white/local — no bus, no socket.
 func runLeave(args []string, out io.Writer) error {
 	cfg, err := config.Load()
@@ -112,7 +112,7 @@ func runLeave(args []string, out io.Writer) error {
 		return err
 	}
 	if cfg.Bus == nil && cfg.Brain == nil {
-		fmt.Fprintln(out, "oikos: not joined to any bus.")
+		fmt.Fprintln(out, "essaim: not joined to any bus.")
 		return nil
 	}
 	cfg.Bus = nil
@@ -120,6 +120,6 @@ func runLeave(args []string, out io.Writer) error {
 	if err := config.Save(cfg); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "oikos: left the bus. oikos is local-only again.")
+	fmt.Fprintln(out, "essaim: left the bus. essaim is local-only again.")
 	return nil
 }

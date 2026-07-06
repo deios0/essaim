@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
-// P2-2: an oikos-AUTHORED rule must carry a half_life_days so the decay clock can
+// P2-2: an essaim-AUTHORED rule must carry a half_life_days so the decay clock can
 // retire it if it is never reinforced. Before the fix writeActive/writeDraft never
 // wrote half_life_days, so a loaded rule had HalfLife==0 and DecayedEffWeight
 // returned the undecayed weight forever — a wrongly-promoted rule lived forever.
@@ -62,8 +62,8 @@ func TestWriteDraftWritesHalfLife(t *testing.T) {
 }
 
 // The default is the spec's canonical preference half-life (30 days).
-func TestOikosAuthoredHalfLifeDefault(t *testing.T) {
+func TestEssaimAuthoredHalfLifeDefault(t *testing.T) {
 	if DefaultHalfLifeDays != 30 {
-		t.Fatalf("oikos-authored default half-life = %v, want the spec's 30-day preference default", DefaultHalfLifeDays)
+		t.Fatalf("essaim-authored default half-life = %v, want the spec's 30-day preference default", DefaultHalfLifeDays)
 	}
 }

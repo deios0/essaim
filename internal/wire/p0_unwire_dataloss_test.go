@@ -6,19 +6,19 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
-// P0-3 [UNWIRE DESTROYS USER EDITS]: the .oikos.bak backup is a pristine snapshot
+// P0-3 [UNWIRE DESTROYS USER EDITS]: the .essaim.bak backup is a pristine snapshot
 // taken ONCE at first wire and never refreshed. restoreNativeFile restored it
-// byte-exact unconditionally, so `oikos unwire` silently overwrote the CURRENT
+// byte-exact unconditionally, so `essaim unwire` silently overwrote the CURRENT
 // file with the day-0 snapshot — destroying every edit the user made to
 // CLAUDE.md/AGENTS.md after wiring — while the CLI printed "original config
 // restored". This is unrecoverable data loss.
 //
 // The fix restores the backup byte-exact ONLY when the user has not diverged the
 // file (current minus the managed block equals the backup). Otherwise it
-// preserves the user's current content, stripping only oikos's managed block.
+// preserves the user's current content, stripping only essaim's managed block.
 
 func managed(body string) string { return rules.WrapBlock(body) }
 
@@ -49,7 +49,7 @@ func TestP0UnwirePreservesUserEditsAfterWiring(t *testing.T) {
 	if !strings.Contains(s, "Original line.") {
 		t.Fatalf("P0-3: unwire lost original content; file now:\n%s", s)
 	}
-	if strings.Contains(s, rules.OIKOS_BEGIN) {
+	if strings.Contains(s, rules.ESSAIM_BEGIN) {
 		t.Fatalf("unwire must remove the managed block; file now:\n%s", s)
 	}
 }

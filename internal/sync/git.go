@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
-// Options configures one `oikos sync` run. Everything is local + BYO-storage:
-// the only network egress is to the user's OWN git RemoteURL — there is no oikos
+// Options configures one `essaim sync` run. Everything is local + BYO-storage:
+// the only network egress is to the user's OWN git RemoteURL — there is no essaim
 // server, no phone-home. The whole feature is OPTIONAL and $0.
 type Options struct {
 	// VaultDir is the local Markdown vault (the source of truth) to sync.
@@ -25,7 +25,7 @@ type Options struct {
 	// WorkRoot is where the transient checkout is created (default: a temp dir
 	// removed after the run). Injectable for tests.
 	WorkRoot string
-	// Message is the commit message (default "oikos sync: rule vault").
+	// Message is the commit message (default "essaim sync: rule vault").
 	Message string
 }
 
@@ -42,7 +42,7 @@ type Result struct {
 
 // Sync pushes/pulls the vault to the user's git remote and merges deterministically.
 //
-// Flow (all local + the user's own remote — no oikos infra):
+// Flow (all local + the user's own remote — no essaim infra):
 //  1. clone/fetch RemoteURL into a transient checkout
 //  2. load the remote vault + the local vault as Records
 //  3. Merge them (deterministic LWW, NO rule lost — see merge.go)
@@ -54,10 +54,10 @@ type Result struct {
 // a future CRDT/Team-Sync layer to slot in without touching the transport.
 func Sync(opt Options) (Result, error) {
 	if strings.TrimSpace(opt.VaultDir) == "" {
-		return Result{}, errors.New("oikos sync: a vault directory is required (set one in /setup or OIKOS_VAULT)")
+		return Result{}, errors.New("essaim sync: a vault directory is required (set one in /setup or ESSAIM_VAULT)")
 	}
 	if strings.TrimSpace(opt.RemoteURL) == "" {
-		return Result{}, errors.New("oikos sync: a git remote is required (e.g. `oikos sync --remote git@github.com:you/rules.git`)")
+		return Result{}, errors.New("essaim sync: a git remote is required (e.g. `essaim sync --remote git@github.com:you/rules.git`)")
 	}
 	branch := opt.Branch
 	if branch == "" {
@@ -65,7 +65,7 @@ func Sync(opt Options) (Result, error) {
 	}
 	msg := opt.Message
 	if msg == "" {
-		msg = "oikos sync: rule vault"
+		msg = "essaim sync: rule vault"
 	}
 
 	// P1 — git argument / transport injection: validate the user-supplied remote
@@ -85,7 +85,7 @@ func Sync(opt Options) (Result, error) {
 	workRoot := opt.WorkRoot
 	cleanup := func() {}
 	if workRoot == "" {
-		tmp, err := os.MkdirTemp("", "oikos-sync-*")
+		tmp, err := os.MkdirTemp("", "essaim-sync-*")
 		if err != nil {
 			return Result{}, err
 		}
@@ -125,7 +125,7 @@ func Sync(opt Options) (Result, error) {
 	//    user fixes the leak rather than shipping it.
 	if leaky, ok := firstCredentialBearing(localRecs); ok {
 		return Result{}, fmt.Errorf(
-			"oikos sync: refusing to push rule %q — its content trips the credential gate "+
+			"essaim sync: refusing to push rule %q — its content trips the credential gate "+
 				"(a secret must never be synced in the clear; remove the credential and retry)",
 			leaky.Key())
 	}
@@ -248,10 +248,10 @@ func (gitRunner) run(dir string, args ...string) (string, error) {
 	cmd.Env = append(os.Environ(),
 		"GIT_CONFIG_GLOBAL=/dev/null",
 		"GIT_CONFIG_SYSTEM=/dev/null",
-		"GIT_AUTHOR_NAME=oikos",
-		"GIT_AUTHOR_EMAIL=oikos@localhost",
-		"GIT_COMMITTER_NAME=oikos",
-		"GIT_COMMITTER_EMAIL=oikos@localhost",
+		"GIT_AUTHOR_NAME=essaim",
+		"GIT_AUTHOR_EMAIL=essaim@localhost",
+		"GIT_COMMITTER_NAME=essaim",
+		"GIT_COMMITTER_EMAIL=essaim@localhost",
 		"GIT_TERMINAL_PROMPT=0", // never block on an interactive credential prompt
 	)
 	// P2: GIT_TERMINAL_PROMPT only stops GIT's own prompts — an SSH remote can still

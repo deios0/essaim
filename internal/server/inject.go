@@ -9,8 +9,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"oikos/internal/inject"
-	"oikos/internal/rules"
+	"essaim/internal/inject"
+	"essaim/internal/rules"
 )
 
 // interceptDeadline is the BASE in-mem budget for the WHOLE request-side
@@ -58,12 +58,12 @@ const degradedWindow = 60 * time.Second
 // Build-side error sentinels (spec §5.5). Only ErrDeadline/ErrPanic/ErrOverflow
 // mark the server degraded; ErrIndexEmpty/ErrNoMatch are honest misses.
 var (
-	errDeadline = errors.New("oikos: intercept deadline exceeded")
-	errPanic    = errors.New("oikos: intercept panic recovered")
+	errDeadline = errors.New("essaim: intercept deadline exceeded")
+	errPanic    = errors.New("essaim: intercept panic recovered")
 )
 
 // injector holds the rule store + bloat-guard config + degraded state. It is the
-// server's handle on the B1 mechanic. A nil store (no OIKOS_VAULT) means no
+// server's handle on the B1 mechanic. A nil store (no ESSAIM_VAULT) means no
 // rules ⇒ no injection, cleanly.
 type injector struct {
 	store *rules.Store
@@ -89,7 +89,7 @@ type injector struct {
 }
 
 // NewWithInjection constructs a Server with the B1 injection layer wired from
-// the environment (OIKOS_VAULT + bloat-guard knobs). When OIKOS_VAULT is unset
+// the environment (ESSAIM_VAULT + bloat-guard knobs). When ESSAIM_VAULT is unset
 // the injector is nil and the proxy is a pure verbatim pass-through. The
 // fsnotify watcher runs for the lifetime of ctx.
 func NewWithInjection(ctx context.Context, addr string) (*Server, error) {
@@ -102,13 +102,13 @@ func NewWithInjection(ctx context.Context, addr string) (*Server, error) {
 	return s, nil
 }
 
-// newInjector constructs an injector from the environment. OIKOS_VAULT selects
-// the vault dir (empty ⇒ no rules); OIKOS_EAGER_BYTES/OIKOS_TOP_K/
-// OIKOS_MATCH_FLOOR tune the bloat guard. It loads the initial index and starts
+// newInjector constructs an injector from the environment. ESSAIM_VAULT selects
+// the vault dir (empty ⇒ no rules); ESSAIM_EAGER_BYTES/ESSAIM_TOP_K/
+// ESSAIM_MATCH_FLOOR tune the bloat guard. It loads the initial index and starts
 // the fsnotify watcher (off the request path). Returns nil (not an error) when
 // no vault is configured, so the proxy degrades cleanly to pass-through.
 func newInjector(ctx context.Context) (*injector, error) {
-	vault := os.Getenv("OIKOS_VAULT")
+	vault := os.Getenv("ESSAIM_VAULT")
 	if vault == "" {
 		return nil, nil // no vault → no injection (clean skip)
 	}
@@ -129,13 +129,13 @@ func newInjector(ctx context.Context) (*injector, error) {
 }
 
 // injectUnsupportedFromEnv builds the static "this model would 400 on an extra
-// instruction message" predicate from OIKOS_INJECT_UNSUPPORTED_MODELS — a
+// instruction message" predicate from ESSAIM_INJECT_UNSUPPORTED_MODELS — a
 // comma-separated list of case-insensitive model-id prefixes (e.g. a strict
 // local upstream's model). It mirrors the per-base_url/per-model
 // `inject_unsupported` recorded at wire time (B1 v1.1 A-2.3 static config,
 // primary). Empty/unset ⇒ nil (no model is skipped).
 func injectUnsupportedFromEnv() func(string) bool {
-	raw := strings.TrimSpace(os.Getenv("OIKOS_INJECT_UNSUPPORTED_MODELS"))
+	raw := strings.TrimSpace(os.Getenv("ESSAIM_INJECT_UNSUPPORTED_MODELS"))
 	if raw == "" {
 		return nil
 	}
@@ -215,7 +215,7 @@ func (in *injector) watcherDegraded() bool {
 	return in.store.WatcherDegraded()
 }
 
-// Store exposes the rule store so cmd/oikos can register the NativeFileEmitter's
+// Store exposes the rule store so cmd/essaim can register the NativeFileEmitter's
 // onSwap callback (the seam the Store already exposes) and read the vault dir.
 // nil when no vault is configured.
 func (s *Server) Store() *rules.Store {
@@ -331,7 +331,7 @@ func (in *injector) buildOnce(ctx context.Context, origBody []byte, ix *rules.In
 	// SKIP-on-unsupported gate (B1 v1.1 A-2.3 / A-2.5): runs BEFORE any strip or
 	// wire mutation. If the target model would 400 on an extra leading
 	// instruction message, forward the VERBATIM origBody (including any stale
-	// oikos block — strip is NOT run), enqueue no capture, classify NOT degraded.
+	// essaim block — strip is NOT run), enqueue no capture, classify NOT degraded.
 	// Never turn a working request into a 400. The model is read with object-level
 	// key discipline (A-2.1 / F-V7), so a `"model"` substring inside user content
 	// can't trigger a false skip.

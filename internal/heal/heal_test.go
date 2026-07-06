@@ -14,10 +14,10 @@ import (
 const proxyURL = "http://127.0.0.1:4141/v1"
 
 // jsonTarget builds a Target whose Repair faithfully mirrors the production
-// contract (internal/wire.repairBaseURL): it heals ONLY when oikos's own value
+// contract (internal/wire.repairBaseURL): it heals ONLY when essaim's own value
 // was clobbered to a vendor default or dropped, and LEAVES a deliberate user
 // override alone. This keeps the watcher-level tests honest about the real
-// heal-vs-leave decision rather than a "rewrite anything non-oikos" stand-in.
+// heal-vs-leave decision rather than a "rewrite anything non-essaim" stand-in.
 func jsonTarget(path string) Target {
 	return Target{
 		Path:        path,
@@ -50,13 +50,13 @@ func namedTarget(tool, path string) Target {
 	return t
 }
 
-// THE CORE TEST: an IDE update overwrites the tool's base_url (drops the oikos
-// proxy), silently bypassing oikos. The watcher must re-apply the oikos base_url
+// THE CORE TEST: an IDE update overwrites the tool's base_url (drops the essaim
+// proxy), silently bypassing essaim. The watcher must re-apply the essaim base_url
 // within the heal window.
 func TestWatcherReappliesOverwrittenBaseURL(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.json")
-	// Start healthy: apiBase points at oikos.
+	// Start healthy: apiBase points at essaim.
 	mustWrite(t, cfg, `{"apiBase":"`+proxyURL+`"}`)
 
 	w := New([]Target{jsonTarget(cfg)})
@@ -69,10 +69,10 @@ func TestWatcherReappliesOverwrittenBaseURL(t *testing.T) {
 	defer w.Close()
 
 	// Simulate the IDE update clobbering the base_url (Cursor/VSCode/Continue
-	// rewriting config.json on upgrade) — the oikos proxy is gone.
+	// rewriting config.json on upgrade) — the essaim proxy is gone.
 	mustWrite(t, cfg, `{"apiBase":"https://api.openai.com/v1"}`)
 
-	// The watcher must re-apply the oikos base_url within the heal window (≤5s;
+	// The watcher must re-apply the essaim base_url within the heal window (≤5s;
 	// tests use the short debounce so this is fast).
 	deadline := time.After(5 * time.Second)
 	for {
@@ -82,13 +82,13 @@ func TestWatcherReappliesOverwrittenBaseURL(t *testing.T) {
 		}
 		select {
 		case <-deadline:
-			t.Fatalf("watcher did not re-apply the oikos base_url; config still:\n%s", b)
+			t.Fatalf("watcher did not re-apply the essaim base_url; config still:\n%s", b)
 		case <-time.After(10 * time.Millisecond):
 		}
 	}
 }
 
-// A healthy config that already points at oikos must NOT be rewritten (no churn,
+// A healthy config that already points at essaim must NOT be rewritten (no churn,
 // no needless disk writes). HealCount stays 0.
 func TestWatcherLeavesHealthyConfigAlone(t *testing.T) {
 	dir := t.TempDir()
@@ -104,12 +104,12 @@ func TestWatcherLeavesHealthyConfigAlone(t *testing.T) {
 	}
 	defer w.Close()
 
-	// Touch the file WITHOUT removing the oikos url (a benign edit).
+	// Touch the file WITHOUT removing the essaim url (a benign edit).
 	mustWrite(t, cfg, `{"apiBase":"`+proxyURL+`","theme":"dark"}`)
 
 	time.Sleep(300 * time.Millisecond)
 	if n := w.HealCount(); n != 0 {
-		t.Fatalf("a config that still points at oikos must not be re-applied; HealCount=%d", n)
+		t.Fatalf("a config that still points at essaim must not be re-applied; HealCount=%d", n)
 	}
 	// And the benign edit must be preserved (we never clobber a healthy file).
 	b, _ := os.ReadFile(cfg)
@@ -150,7 +150,7 @@ func TestCheckOnceHealsAndIsIdempotent(t *testing.T) {
 }
 
 // The watcher must be a no-op (no error, no goroutine) when there are no targets
-// — `oikos serve` starts it only when tools are wired, but defensive: empty is
+// — `essaim serve` starts it only when tools are wired, but defensive: empty is
 // safe.
 func TestWatcherNoTargetsIsNoop(t *testing.T) {
 	w := New(nil)
@@ -191,13 +191,13 @@ func TestHealIsLocalFileIOOnly(t *testing.T) {
 }
 
 // THE SHIP-BLOCKER TEST (watcher level): a base_url the USER deliberately set to
-// a non-oikos, non-vendor-default value must be LEFT ALONE across heal passes —
-// the watcher must never stomp it back to oikos. Pairs with the unit-level
+// a non-essaim, non-vendor-default value must be LEFT ALONE across heal passes —
+// the watcher must never stomp it back to essaim. Pairs with the unit-level
 // internal/wire.TestRepairLeavesDeliberateUserOverrideAlone.
 func TestWatcherLeavesUserSetURLAloneOnlyHealsClobber(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.json")
-	// The user DELIBERATELY points Continue at their own gateway (NOT oikos).
+	// The user DELIBERATELY points Continue at their own gateway (NOT essaim).
 	userSet := `{"apiBase":"https://my-gateway.example.com/v1"}`
 	mustWrite(t, cfg, userSet)
 
@@ -217,13 +217,13 @@ func TestWatcherLeavesUserSetURLAloneOnlyHealsClobber(t *testing.T) {
 	}
 
 	// Now simulate an IDE update that factory-resets the value to a vendor default
-	// (the ONLY case oikos heals). This MUST be re-pointed at the proxy.
+	// (the ONLY case essaim heals). This MUST be re-pointed at the proxy.
 	mustWrite(t, cfg, `{"apiBase":"https://api.openai.com/v1"}`)
 	if n, err := w.CheckOnce(); err != nil || n != 1 {
 		t.Fatalf("a vendor-default clobber must heal exactly once; healed=%d err=%v", n, err)
 	}
 	if b, _ := os.ReadFile(cfg); !strings.Contains(string(b), proxyURL) {
-		t.Fatalf("clobbered value not re-pointed at oikos:\n%s", b)
+		t.Fatalf("clobbered value not re-pointed at essaim:\n%s", b)
 	}
 }
 
@@ -234,7 +234,7 @@ func TestWatcherLiveDisableFlagStopsHealing(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.json")
 	flag := filepath.Join(dir, "heal.disabled")
-	mustWrite(t, cfg, `{"apiBase":"https://api.openai.com/v1"}`) // a clobber oikos would heal
+	mustWrite(t, cfg, `{"apiBase":"https://api.openai.com/v1"}`) // a clobber essaim would heal
 
 	w := New([]Target{jsonTarget(cfg)})
 	w.SetDisableFlagPath(flag)
@@ -259,10 +259,10 @@ func TestWatcherLiveDisableFlagStopsHealing(t *testing.T) {
 
 // P1 RESPECTS-UNWIRE (the heal-watcher must not fight `unwire` on a RUNNING
 // daemon): on an already-running watcher, once a tool is removed from the live
-// wired-tools set (what `oikos unwire` does to config.json), the watcher must
+// wired-tools set (what `essaim unwire` does to config.json), the watcher must
 // STOP healing that tool's config file WITHOUT a restart. The targets list is
 // built once at boot; the live-tools predicate is what makes unwire take effect
-// in-process. A user who unwires to stop oikos touching their file must not find
+// in-process. A user who unwires to stop essaim touching their file must not find
 // the daemon still rewriting it.
 func TestWatcherRespectsUnwireOnRunningDaemon(t *testing.T) {
 	dir := t.TempDir()
@@ -270,7 +270,7 @@ func TestWatcherRespectsUnwireOnRunningDaemon(t *testing.T) {
 	mustWrite(t, cfg, `{"apiBase":"`+proxyURL+`"}`) // start healthy
 
 	// The live wired-tools set the watcher consults. We flip "continue" out of it
-	// mid-flight to simulate `oikos unwire continue` on the running daemon.
+	// mid-flight to simulate `essaim unwire continue` on the running daemon.
 	var mu sync.Mutex
 	wired := map[string]bool{"continue": true}
 	w := New([]Target{namedTarget("continue", cfg)})
@@ -290,12 +290,12 @@ func TestWatcherRespectsUnwireOnRunningDaemon(t *testing.T) {
 		t.Fatalf("while wired, a clobber must heal; healed=%d err=%v", n, err)
 	}
 
-	// Now `oikos unwire continue`: drop it from the live wired-tools set. No restart.
+	// Now `essaim unwire continue`: drop it from the live wired-tools set. No restart.
 	mu.Lock()
 	delete(wired, "continue")
 	mu.Unlock()
 
-	// Clobber the file again — the very thing the unwiring user wants oikos to STOP
+	// Clobber the file again — the very thing the unwiring user wants essaim to STOP
 	// touching. The watcher must NOT re-heal it now.
 	clobber := `{"apiBase":"https://api.openai.com/v1"}`
 	mustWrite(t, cfg, clobber)
@@ -430,7 +430,7 @@ func TestCheckOnceConcurrentPassesAreRaceSafe(t *testing.T) {
 
 // P1: a Repair error from a background pass (startup + loop) must be SURFACED via
 // the onError sink, not silently swallowed. Without this an unparseable config the
-// user thinks oikos is guarding would fail invisibly.
+// user thinks essaim is guarding would fail invisibly.
 func TestWatcherSurfacesRepairErrorViaOnError(t *testing.T) {
 	dir := t.TempDir()
 	cfg := filepath.Join(dir, "config.json")

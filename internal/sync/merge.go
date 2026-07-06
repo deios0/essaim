@@ -20,7 +20,7 @@ import "sort"
 // replaces `less` with a richer conflict resolver (per-field LWW-registers, or
 // an RGA/text-CRDT over Body for character-level merge) WITHOUT changing this
 // function's contract: take two record sets, return one deterministic, lossless
-// union. Callers (oikos sync, the git transport) depend only on that contract.
+// union. Callers (essaim sync, the git transport) depend only on that contract.
 func Merge(local, remote []Record) []Record {
 	winners := make(map[string]Record, len(local)+len(remote))
 

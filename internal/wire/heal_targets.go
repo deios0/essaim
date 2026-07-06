@@ -11,13 +11,13 @@ import (
 	"runtime"
 	"strings"
 
-	"oikos/internal/config"
-	"oikos/internal/heal"
+	"essaim/internal/config"
+	"essaim/internal/heal"
 )
 
 // proxyV1URL is the base_url an OpenAI-compatible IDE config must hold to route
-// through oikos (the /v1 suffix is what OpenAI clients expect). It is the value
-// oikos writes — i.e. every base_url heal target's LastWritten.
+// through essaim (the /v1 suffix is what OpenAI clients expect). It is the value
+// essaim writes — i.e. every base_url heal target's LastWritten.
 const proxyV1URL = ProxyBaseURL + "/v1"
 
 // The JSON keys an OpenAI-compatible IDE uses to hold a custom API base
@@ -28,7 +28,7 @@ const proxyV1URL = ProxyBaseURL + "/v1"
 // vendorDefaultHosts are the upstream API hosts an IDE update RESETS a base_url to
 // when it factory-restores its provider config (the clobber the heal watcher
 // undoes). A managed base_url found pointing at one of these — having previously
-// held the oikos proxy — is an IDE reset, NOT a deliberate user choice, so it is
+// held the essaim proxy — is an IDE reset, NOT a deliberate user choice, so it is
 // healed. Crucially: a base_url pointing at ANY OTHER host (e.g. a user's own
 // gateway / a self-hosted proxy) is a deliberate override and is LEFT ALONE.
 //
@@ -44,20 +44,20 @@ var vendorDefaultHosts = []string{
 }
 
 // HealSink is called on each SUCCESSFUL heal (P1-BUG-3) with the tool name and the
-// config path oikos just re-pointed at the proxy. It is the mirror of the heal
+// config path essaim just re-pointed at the proxy. It is the mirror of the heal
 // watcher's onError sink: `serve` wires it to stderr so a heal is VISIBLE — the
-// user who deliberately reverted their IDE to the vendor default is TOLD oikos
-// re-applied the proxy URL and HOW to stop it (`oikos unwire <tool>`), instead of
+// user who deliberately reverted their IDE to the vendor default is TOLD essaim
+// re-applied the proxy URL and HOW to stop it (`essaim unwire <tool>`), instead of
 // the watcher silently fighting them every ~750ms. A nil sink is a no-op.
 type HealSink func(tool, path string)
 
-// HealNotice is the exact, honest line `serve` should surface when oikos re-points
+// HealNotice is the exact, honest line `serve` should surface when essaim re-points
 // a tool at the proxy (P1-BUG-3). It names the tool, the config path, and the
 // escape hatch so the message is actionable — the user reverted to the vendor
-// default on purpose and must learn WHY oikos keeps changing it back and HOW to
+// default on purpose and must learn WHY essaim keeps changing it back and HOW to
 // stop. One source of truth so the test and the serve-side wiring agree.
 func HealNotice(tool, path string) string {
-	return fmt.Sprintf("oikos: re-pointed %s at the proxy (%s); to stop, run `oikos unwire %s`", tool, path, tool)
+	return fmt.Sprintf("essaim: re-pointed %s at the proxy (%s); to stop, run `essaim unwire %s`", tool, path, tool)
 }
 
 // HealTargets builds the self-heal targets for the wired base_url tools whose IDE
@@ -77,12 +77,12 @@ func HealTargets(c config.Config, pathOverrides map[string]string) []heal.Target
 // HealTargetsWithSink is HealTargets plus an onHeal notification (P1-BUG-3). Every
 // target's Repair closure calls onHeal(tool, path) whenever it actually heals
 // (changed == true) — never on a healthy config or a deliberate user override, so
-// the user is notified ONLY when oikos changed something under them. `serve` passes
+// the user is notified ONLY when essaim changed something under them. `serve` passes
 // a sink that writes HealNotice to stderr; tests pass a recording sink. A nil sink
 // makes this identical to HealTargets.
 //
-// Every target carries LastWritten = proxyV1URL — the exact value oikos writes — so
-// the healer only ever re-applies over oikos's OWN clobbered value and never a
+// Every target carries LastWritten = proxyV1URL — the exact value essaim writes — so
+// the healer only ever re-applies over essaim's OWN clobbered value and never a
 // value a user deliberately set.
 func HealTargetsWithSink(c config.Config, pathOverrides map[string]string, onHeal HealSink) []heal.Target {
 	var out []heal.Target
@@ -105,8 +105,8 @@ func HealTargetsWithSink(c config.Config, pathOverrides map[string]string, onHea
 			Path:        path,
 			ExpectedURL: proxyV1URL,
 			LastWritten: proxyV1URL,
-			// Bind the healer to THIS target's LastWritten — the exact value oikos
-			// wrote — so "already healthy" is judged against oikos's own recorded
+			// Bind the healer to THIS target's LastWritten — the exact value essaim
+			// wrote — so "already healthy" is judged against essaim's own recorded
 			// value, not a global constant. (Today every base_url target's
 			// LastWritten is proxyV1URL, but threading it keeps the wire-record
 			// load-bearing and correct if a target ever records a different one.)
@@ -143,28 +143,28 @@ func notifyOnHeal(inner func([]byte) ([]byte, bool, error), tool, path string, o
 // trailing commas, and // or /* */ comments elsewhere are all preserved.
 var baseURLPairRe = regexp.MustCompile(`"(apiBase|base_url|baseURL|openai_base_url)"\s*:\s*"((?:[^"\\]|\\.)*)"`)
 
-// repairBaseURLFor builds the surgical healer for a target whose oikos-written
-// value is lastWritten (the wire-record — the exact base_url oikos put in the
+// repairBaseURLFor builds the surgical healer for a target whose essaim-written
+// value is lastWritten (the wire-record — the exact base_url essaim put in the
 // file). The returned func is what heal.Target.Repair calls. Binding lastWritten
-// makes the "already healthy / ours" check judge against oikos's OWN recorded
+// makes the "already healthy / ours" check judge against essaim's OWN recorded
 // value rather than a global constant.
 //
-// The healer surgically re-points oikos's OWN clobbered base_url back at the
+// The healer surgically re-points essaim's OWN clobbered base_url back at the
 // proxy, preserving the rest of the file byte-for-byte (P1). It NEVER rewrites
 // the whole config (no unmarshal→MarshalIndent — that lost key order, formatting
 // and comments). It returns (healed, changed, err):
 //
-//   - changed == false: every managed key is either already on the oikos proxy
-//     (healthy) OR holds a value the user DELIBERATELY set (a non-oikos,
+//   - changed == false: every managed key is either already on the essaim proxy
+//     (healthy) OR holds a value the user DELIBERATELY set (a non-essaim,
 //     non-vendor-default URL — a user override). Left byte-untouched.
 //   - changed == true: at least one managed key held a VENDOR DEFAULT (an IDE
-//     factory-reset of oikos's value) or an EMPTY value (oikos's value dropped);
+//     factory-reset of essaim's value) or an EMPTY value (essaim's value dropped);
 //     those — and only those — are surgically replaced with the proxy URL.
 //   - err != nil: the file is not parseable JSON/JSONC. We surface it (the
 //     watcher reports it at startup) rather than silently no-op'ing — an
-//     un-healable config the user thinks oikos is guarding must be visible.
+//     un-healable config the user thinks essaim is guarding must be visible.
 //
-// repairBaseURL is the default healer (lastWritten = the oikos proxy url every
+// repairBaseURL is the default healer (lastWritten = the essaim proxy url every
 // base_url target records today). It is the convenience entry for the standard
 // case; repairBaseURLFor binds a specific recorded value.
 func repairBaseURL(cur []byte) ([]byte, bool, error) {
@@ -180,7 +180,7 @@ func repairBaseURLFor(lastWritten string) func([]byte) ([]byte, bool, error) {
 		// yields no change.
 		comments, err := scanJSONC(cur)
 		if err != nil {
-			return cur, false, fmt.Errorf("oikos heal: config is not valid JSON/JSONC, cannot safely heal: %w", err)
+			return cur, false, fmt.Errorf("essaim heal: config is not valid JSON/JSONC, cannot safely heal: %w", err)
 		}
 
 		changed := false
@@ -222,21 +222,21 @@ func repairBaseURLFor(lastWritten string) func([]byte) ([]byte, bool, error) {
 	}
 }
 
-// shouldHealValue decides, for a managed base_url's CURRENT value, whether oikos
+// shouldHealValue decides, for a managed base_url's CURRENT value, whether essaim
 // should re-apply its own recorded value (lastWritten). This is the heart of
 // "don't fight the user":
 //
-//   - already-ours   → false (healthy; the value oikos wrote is still there).
-//   - empty          → true  (oikos's value was dropped — re-apply).
-//   - vendor default → true  (an IDE factory-reset of oikos's value — re-apply).
+//   - already-ours   → false (healthy; the value essaim wrote is still there).
+//   - empty          → true  (essaim's value was dropped — re-apply).
+//   - vendor default → true  (an IDE factory-reset of essaim's value — re-apply).
 //   - anything else  → false (a URL the user deliberately set — a user override
 //     we must NEVER stomp, e.g. their own gateway).
 func shouldHealValue(value, lastWritten string) bool {
 	if value == lastWritten || strings.Contains(value, ProxyBaseURL) {
-		return false // still oikos's own value — healthy, no churn
+		return false // still essaim's own value — healthy, no churn
 	}
 	if strings.TrimSpace(value) == "" {
-		return true // dropped/blanked — oikos's value is gone
+		return true // dropped/blanked — essaim's value is gone
 	}
 	return isVendorDefault(value)
 }
@@ -291,7 +291,7 @@ func urlHost(value string) string {
 	// Scheme-less (or otherwise host-less) → retry with a synthetic scheme so the
 	// host token is parsed as an authority rather than a path.
 	if !strings.Contains(value, "://") {
-		if u2, err2 := url.Parse("oikos-scheme://" + value); err2 == nil {
+		if u2, err2 := url.Parse("essaim-scheme://" + value); err2 == nil {
 			return strings.ToLower(u2.Hostname())
 		}
 	}
@@ -384,24 +384,24 @@ func scanJSONC(b []byte) ([]span, error) {
 	return spans, nil
 }
 
-// vendorDefaultBaseURL is the base_url `oikos unwire` restores an OpenAI-compatible
+// vendorDefaultBaseURL is the base_url `essaim unwire` restores an OpenAI-compatible
 // tool's config to once the heal watcher has repointed it at the (now dead) proxy,
-// WHEN oikos never captured the user's real original upstream (an old wire-record
+// WHEN essaim never captured the user's real original upstream (an old wire-record
 // with no OriginalBaseURL). It is the OpenAI vendor default — the value an IDE
-// factory-reset would itself write — so a user who deletes oikos is left pointing
+// factory-reset would itself write — so a user who deletes essaim is left pointing
 // at a LIVE upstream, not a dead loopback. (The heal watcher treats exactly this
 // host as "vendor default → re-heal", so the inverse is symmetric.)
 const vendorDefaultBaseURL = "https://api.openai.com/v1"
 
 // captureOriginalBaseURL reads the tool's IDE config at path and returns the
-// FIRST managed base_url value that is not already oikos's own proxy URL — i.e.
-// the user's real upstream BEFORE oikos wired/healed it. This is called at WIRE
-// time so `oikos unwire` can later restore the user's exact original provider (a
+// FIRST managed base_url value that is not already essaim's own proxy URL — i.e.
+// the user's real upstream BEFORE essaim wired/healed it. This is called at WIRE
+// time so `essaim unwire` can later restore the user's exact original provider (a
 // non-OpenAI vendor, their own gateway) rather than a hardcoded OpenAI default.
 //
 // It returns "" (and no error) when: path is empty/absent, the config is
 // unparseable, there is no managed base_url key, or the only value present is
-// already the oikos proxy (nothing pristine to capture). A parse error is NOT
+// already the essaim proxy (nothing pristine to capture). A parse error is NOT
 // fatal — capturing the original is best-effort; unwire falls back to the vendor
 // default when we couldn't capture it.
 func captureOriginalBaseURL(path string) string {
@@ -425,40 +425,40 @@ func captureOriginalBaseURL(path string) string {
 			continue // blank — no upstream recorded here
 		}
 		if isProxyURL(value) {
-			continue // already oikos's own value — not the pristine original
+			continue // already essaim's own value — not the pristine original
 		}
 		return value // the user's real upstream, verbatim
 	}
 	return ""
 }
 
-// baseURLConfigPath resolves the IDE config file `oikos unwire` must un-heal for a
+// baseURLConfigPath resolves the IDE config file `essaim unwire` must un-heal for a
 // base_url tool. It is the same resolver the heal watcher uses to find what to
 // keep pointed at the proxy, so unwire acts on exactly the file wire's healer
-// wrote. "" means oikos ships no known location for the tool (the caller then
+// wrote. "" means essaim ships no known location for the tool (the caller then
 // emits a manual-recovery hint instead of silently claiming success).
 func baseURLConfigPath(tool string) string {
 	return defaultConfigPath(tool)
 }
 
 // RestoreStatus reports the outcome of un-healing a base_url tool's IDE config on
-// unwire. Changed is true when oikos removed its own proxy URL from the config.
-// NeedsManualHint is true when oikos could not auto-restore the config (it doesn't
+// unwire. Changed is true when essaim removed its own proxy URL from the config.
+// NeedsManualHint is true when essaim could not auto-restore the config (it doesn't
 // know where the tool stores its config, or no config file was present) — the CLI
 // then prints an honest recovery hint rather than claiming "original config
 // restored".
 type RestoreStatus struct {
 	Changed         bool
 	NeedsManualHint bool
-	// Path is the config file oikos acted on (or would have), for the CLI message.
+	// Path is the config file essaim acted on (or would have), for the CLI message.
 	Path string
 }
 
 // restoreBaseURLConfig is the INVERSE of the heal repair (P1-BUG-2). The heal
-// watcher writes the oikos proxy URL into an OpenAI-compatible IDE config; once the
-// user deletes the oikos binary that URL points at a DEAD loopback with no
+// watcher writes the essaim proxy URL into an OpenAI-compatible IDE config; once the
+// user deletes the essaim binary that URL points at a DEAD loopback with no
 // recovery. On unwire, restoreBaseURLConfig surgically replaces any managed
-// base_url key that currently holds the oikos proxy URL with the vendor default
+// base_url key that currently holds the essaim proxy URL with the vendor default
 // (api.openai.com), preserving the rest of the file byte-for-byte exactly like the
 // forward healer. A value the user set to something else is LEFT ALONE (unwire
 // never fights the user). It returns a RestoreStatus so the CLI can print an
@@ -470,7 +470,7 @@ func restoreBaseURLConfig(path string) (RestoreStatus, error) {
 
 // restoreBaseURLConfigTo is restoreBaseURLConfig with an explicit restoreTo value
 // — the user's ORIGINAL upstream captured at wire time (config.WiredTool.
-// OriginalBaseURL). When restoreTo is non-empty, oikos's proxy URL is replaced
+// OriginalBaseURL). When restoreTo is non-empty, essaim's proxy URL is replaced
 // with THAT exact value, so the user is returned to their real provider (a
 // non-OpenAI vendor, their own gateway). When it is empty (an old wire-record with
 // no captured original, or the capture failed), it falls back to the vendor
@@ -478,7 +478,7 @@ func restoreBaseURLConfig(path string) (RestoreStatus, error) {
 // to double-check the restored base_url.
 func restoreBaseURLConfigTo(path, restoreTo string) (RestoreStatus, error) {
 	if path == "" {
-		// oikos doesn't know where this tool's config lives — it never wrote one, but
+		// essaim doesn't know where this tool's config lives — it never wrote one, but
 		// the heal watcher only healed files it knew; so there is nothing to undo, but
 		// we still flag a hint in case the user pointed some other config at the proxy.
 		return RestoreStatus{NeedsManualHint: true}, nil
@@ -493,7 +493,7 @@ func restoreBaseURLConfigTo(path, restoreTo string) (RestoreStatus, error) {
 	}
 
 	// Pick the value to restore to: the captured original when known, else the
-	// vendor default (with a hint that oikos guessed).
+	// vendor default (with a hint that essaim guessed).
 	target := restoreTo
 	guessed := false
 	if strings.TrimSpace(target) == "" {
@@ -519,7 +519,7 @@ func restoreBaseURLConfigTo(path, restoreTo string) (RestoreStatus, error) {
 }
 
 // unhealBaseURLTo surgically replaces every managed base_url key CURRENTLY holding
-// the oikos proxy URL with restoreTo, preserving formatting/comments exactly like
+// the essaim proxy URL with restoreTo, preserving formatting/comments exactly like
 // the forward healer. A key holding any other value (a user override, or already a
 // vendor default) is left byte-untouched. restoreTo is JSON-string-safe only if it
 // contains no characters needing escaping; base_url values (URLs) do not, so a raw
@@ -528,7 +528,7 @@ func restoreBaseURLConfigTo(path, restoreTo string) (RestoreStatus, error) {
 func unhealBaseURLTo(cur []byte, restoreTo string) ([]byte, bool, error) {
 	comments, err := scanJSONC(cur)
 	if err != nil {
-		return cur, false, fmt.Errorf("oikos unwire: config is not valid JSON/JSONC, cannot safely restore: %w", err)
+		return cur, false, fmt.Errorf("essaim unwire: config is not valid JSON/JSONC, cannot safely restore: %w", err)
 	}
 	locs := baseURLPairRe.FindAllSubmatchIndex(cur, -1)
 	healed := cur
@@ -541,7 +541,7 @@ func unhealBaseURLTo(cur []byte, restoreTo string) ([]byte, bool, error) {
 		valStart, valEnd := m[4], m[5]
 		value := decodeJSONString(cur[valStart:valEnd])
 		if !isProxyURL(value) {
-			continue // only undo oikos's OWN proxy URL; leave everything else alone
+			continue // only undo essaim's OWN proxy URL; leave everything else alone
 		}
 		out := make([]byte, 0, len(healed)+len(restoreTo))
 		out = append(out, healed[:valStart]...)
@@ -556,7 +556,7 @@ func unhealBaseURLTo(cur []byte, restoreTo string) ([]byte, bool, error) {
 	return healed, true, nil
 }
 
-// isProxyURL reports whether value is oikos's OWN proxy URL (the value the heal
+// isProxyURL reports whether value is essaim's OWN proxy URL (the value the heal
 // watcher writes). Matching on the loopback host+port substring tolerates the /v1
 // suffix, a trailing slash, or the exact recorded value.
 func isProxyURL(value string) bool {
@@ -576,7 +576,7 @@ func writeFilePreservingMode(path string, content []byte) error {
 }
 
 // defaultConfigPath returns the conventional config file path for a known
-// base_url tool, or "" if oikos doesn't ship a default for it. Continue is the
+// base_url tool, or "" if essaim doesn't ship a default for it. Continue is the
 // one with a well-known cross-platform location (~/.continue/config.json). For
 // others we have no safe default and rely on a pathOverride.
 func defaultConfigPath(tool string) string {

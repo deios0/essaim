@@ -4,16 +4,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // LiveWiredTools must reflect the CURRENT config.json: a tool present in the
-// wired set is reported live; after it is removed (the effect of `oikos unwire`)
+// wired set is reported live; after it is removed (the effect of `essaim unwire`)
 // the predicate no longer reports it — the running watcher's RESPECTS-UNWIRE
 // signal (P1). This is the real config-backed path the heal stub tests model.
 func TestLiveWiredToolsReflectsConfigAcrossUnwire(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	// Wire a base_url tool (cursor) so config.json records it.
 	if err := config.Save(config.Config{
@@ -31,7 +31,7 @@ func TestLiveWiredToolsReflectsConfigAcrossUnwire(t *testing.T) {
 		t.Fatalf("cursor must be reported live while wired; set=%v", set)
 	}
 
-	// Simulate `oikos unwire cursor`: persist a config without it.
+	// Simulate `essaim unwire cursor`: persist a config without it.
 	if err := config.Save(config.Config{WiredTools: nil}); err != nil {
 		t.Fatalf("rewrite config: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestLiveWiredToolsReflectsConfigAcrossUnwire(t *testing.T) {
 // the guard.)
 func TestLiveWiredToolsUndeterminableOnMissingConfig(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "does-not-exist.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "does-not-exist.json"))
 
 	if _, ok := LiveWiredTools()(); ok {
 		t.Fatal("a missing config must be undeterminable (ok=false), not an empty live set")
@@ -63,7 +63,7 @@ func TestLiveWiredToolsUndeterminableOnMissingConfig(t *testing.T) {
 // be picked up on the next call, not masked by the cache.
 func TestLiveWiredToolsMtimeCacheRefreshesOnChange(t *testing.T) {
 	dir := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(dir, "config.json"))
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(dir, "config.json"))
 
 	if err := config.Save(config.Config{
 		WiredTools: []config.WiredTool{{Name: "continue", Channel: ChannelBaseURL}},

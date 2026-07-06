@@ -1,4 +1,4 @@
-// Package initcmd implements `oikos init`: the forced first-run demo that gives
+// Package initcmd implements `essaim init`: the forced first-run demo that gives
 // a brand-new user a GUARANTEED "aha" on their very first request instead of a
 // probabilistic one.
 //
@@ -7,7 +7,7 @@
 // kebab-case React component filenames — and (3) prints a copy-paste test prompt
 // plus the exact before/after so the difference is undeniable:
 //
-//	"create a Card component"  →  card.js   (WITH oikos)
+//	"create a Card component"  →  card.js   (WITH essaim)
 //	                              Card.js   (a stock model's default)
 //
 // The rule is deliberately specific (it names React/component/create/kebab-case)
@@ -21,8 +21,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"oikos/internal/config"
-	"oikos/internal/rules"
+	"essaim/internal/config"
+	"essaim/internal/rules"
 )
 
 // warnOut is where Run emits best-effort warnings (e.g. a failed _inbox/.gitignore
@@ -40,7 +40,7 @@ const AhaQuery = "create a Card component"
 // starterRule is the seeded demo rule. It is a fully-formed Obsidian-style note
 // (durable YAML frontmatter + Markdown body) so it parses back through the real
 // loader and enters the matchable index as a `live` rule — injectable through the
-// proxy AND emitted by the native-file path (`oikos emit`): init's quickstart
+// proxy AND emitted by the native-file path (`essaim emit`): init's quickstart
 // sends the user straight to emit, and only `status: live` clears that stricter
 // gate — `active` would greet the first-run user with an empty block. The
 // body is dense with the query's distinctive words (create / Card / component /
@@ -69,7 +69,7 @@ kebab-case.
 // Options configures Run.
 type Options struct {
 	// VaultDir is where the vault is created. Empty ⇒ Run derives a sensible
-	// default under the user's home (~/oikos-vault).
+	// default under the user's home (~/essaim-vault).
 	VaultDir string
 }
 
@@ -109,7 +109,7 @@ func Run(opts Options) (Result, error) {
 		}
 		created = true
 	} else if !info.IsDir() {
-		return Result{}, fmt.Errorf("oikos init: %s exists but is not a directory", vault)
+		return Result{}, fmt.Errorf("essaim init: %s exists but is not a directory", vault)
 	}
 
 	if err := writeStarterRule(vault); err != nil {
@@ -117,7 +117,7 @@ func Run(opts Options) (Result, error) {
 	}
 
 	// P2-B: seed _inbox/.gitignore via the SAME M3 mechanism the extractor/hot
-	// store use. If the user ran `oikos init` inside a git work-tree, this keeps
+	// store use. If the user ran `essaim init` inside a git work-tree, this keeps
 	// ephemeral drafts and the reinforce-counter sidecar out of their commits. It
 	// is best-effort: a non-fatal error here (e.g. a read-only FS) must not stop a
 	// successful demo seed — the rule above is already written.
@@ -127,11 +127,11 @@ func Run(opts Options) (Result, error) {
 	// production) and init continues. The _inbox/.gitignore is a git-hygiene nicety,
 	// not a prerequisite for the demo rule the user came for.
 	if _, err := rules.EnsureInboxDir(vault); err != nil {
-		fmt.Fprintf(warnOut, "oikos init: could not create %s/_inbox (git-ignore hygiene skipped, "+
+		fmt.Fprintf(warnOut, "essaim init: could not create %s/_inbox (git-ignore hygiene skipped, "+
 			"drafts may show up in git status): %v\n", vault, err)
 	}
 
-	// Record the vault in the config so `oikos serve` injects from it without any
+	// Record the vault in the config so `essaim serve` injects from it without any
 	// further setup. Update loads the existing config (preserving whatever else is
 	// there), sets the vault, and saves — all under the config mutex so a concurrent
 	// wire/setup can't clobber this write (P2).
@@ -157,27 +157,27 @@ func writeStarterRule(dir string) error {
 	return os.WriteFile(path, []byte(starterRule), 0o644)
 }
 
-// defaultVaultDir is ~/oikos-vault — a cross-platform home-anchored default (no
+// defaultVaultDir is ~/essaim-vault — a cross-platform home-anchored default (no
 // hostname/machine-id derivation, matching config.Path's portability stance).
 func defaultVaultDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, "oikos-vault"), nil
+	return filepath.Join(home, "essaim-vault"), nil
 }
 
 // demoText is the undeniable before/after the user pastes to feel the override.
-// It names the exact prompt, the WITH-oikos result, and the stock-model result,
+// It names the exact prompt, the WITH-essaim result, and the stock-model result,
 // so the difference is guaranteed-visible on request #1.
 func demoText(vault string) string {
-	return fmt.Sprintf(`oikos is set up. One starter rule is live in your vault:
+	return fmt.Sprintf(`essaim is set up. One starter rule is live in your vault:
   %s
 
 Now write it into your tool's native rules file — NO proxy needed:
 
   ┌────────────────────────────────────────────────────────────────┐
-  │  oikos emit --file claude-code=./CLAUDE.md --file codex=./AGENTS.md │
+  │  essaim emit --file claude-code=./CLAUDE.md --file codex=./AGENTS.md │
   └────────────────────────────────────────────────────────────────┘
 
 Then ask your AI:
@@ -190,10 +190,10 @@ Then ask your AI:
   without it     →  Card.js         (the model's stock default)
 
 That's the whole idea: you teach ONE correction (React files are kebab-case) and
-oikos keeps it written into every tool's AGENTS.md / CLAUDE.md — a static file you
-maintain by hand can't do that. Re-run `+"`oikos emit`"+` anytime to refresh.
+essaim keeps it written into every tool's AGENTS.md / CLAUDE.md — a static file you
+maintain by hand can't do that. Re-run `+"`essaim emit`"+` anytime to refresh.
 
-Optional: run `+"`oikos serve`"+` (live mode) to capture corrections in real time.
+Optional: run `+"`essaim serve`"+` (live mode) to capture corrections in real time.
 
 Tip: a rule fires when it shares words with your request, so write the vocabulary
 of the questions it should catch INTO the rule (a "use PostgreSQL" rule should say

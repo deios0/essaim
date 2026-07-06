@@ -1,4 +1,4 @@
-module oikos
+module essaim
 
 go 1.24
 

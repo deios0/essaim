@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	syncpkg "oikos/internal/sync"
+	syncpkg "essaim/internal/sync"
 )
 
 func gitOrSkip(t *testing.T) {
@@ -19,9 +19,9 @@ func gitOrSkip(t *testing.T) {
 }
 
 func TestRunSyncRequiresRemote(t *testing.T) {
-	// No --remote and no OIKOS_SYNC_REMOTE → a clear error.
-	t.Setenv("OIKOS_SYNC_REMOTE", "")
-	os.Unsetenv("OIKOS_SYNC_REMOTE")
+	// No --remote and no ESSAIM_SYNC_REMOTE → a clear error.
+	t.Setenv("ESSAIM_SYNC_REMOTE", "")
+	os.Unsetenv("ESSAIM_SYNC_REMOTE")
 	var out bytes.Buffer
 	if err := runSync([]string{"--vault", t.TempDir()}, &out); err == nil {
 		t.Fatal("runSync without a remote must error")
@@ -29,9 +29,9 @@ func TestRunSyncRequiresRemote(t *testing.T) {
 }
 
 func TestRunSyncRequiresVault(t *testing.T) {
-	t.Setenv("OIKOS_VAULT", "")
-	os.Unsetenv("OIKOS_VAULT")
-	t.Setenv("OIKOS_CONFIG", filepath.Join(t.TempDir(), "config.json")) // empty config
+	t.Setenv("ESSAIM_VAULT", "")
+	os.Unsetenv("ESSAIM_VAULT")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(t.TempDir(), "config.json")) // empty config
 	var out bytes.Buffer
 	if err := runSync([]string{"--remote", "git@example.com:x/y.git"}, &out); err == nil {
 		t.Fatal("runSync without a vault must error")

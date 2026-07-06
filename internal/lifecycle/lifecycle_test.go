@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 func at(d int) time.Time { return time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC).AddDate(0, 0, d) }

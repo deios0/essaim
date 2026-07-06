@@ -13,7 +13,7 @@ import (
 )
 
 // ErrNoBackend is returned when there is neither a key nor a reachable local LLM.
-var ErrNoBackend = errors.New("oikos: no upstream — add an OpenRouter key or start Ollama/LM Studio")
+var ErrNoBackend = errors.New("essaim: no upstream — add an OpenRouter key or start Ollama/LM Studio")
 
 // defaultDetectTTL is how long a successful local-LLM detection is reused
 // before re-dialing. Keeps the TCP probe off the per-request hot path (the

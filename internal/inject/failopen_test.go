@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
 // 8.E — Cache-stability & fail-open hardening (M2 review P2/P3) ----------------
 
 // P2 cache-stability (Finding 1): a TRUE no-op — no rule matched AND no prior
-// oikos block to strip — must return the ORIGINAL body bytes UNCHANGED. A
+// essaim block to strip — must return the ORIGINAL body bytes UNCHANGED. A
 // pretty-printed (indented) body must NOT be re-serialized (which would strip
 // intra-array whitespace and bust upstream prompt-caching, defeating the
 // splice-not-Marshal design).
 func TestNoOpReturnsOriginalBytesUnchanged(t *testing.T) {
 	body := []byte("{\n\t\"messages\": [\n\t\t{\n\t\t\t\"role\": \"user\",\n\t\t\t\"content\": \"hi\"\n\t\t}\n\t]\n}")
-	res, err := Build(body, nil, nil) // empty match, no prior oikos block
+	res, err := Build(body, nil, nil) // empty match, no prior essaim block
 	if err != nil {
 		t.Fatalf("no-op Build must not error: %v", err)
 	}
@@ -28,7 +28,7 @@ func TestNoOpReturnsOriginalBytesUnchanged(t *testing.T) {
 	}
 }
 
-// P2 cache-stability: when a prior oikos block IS present and matched==[], the
+// P2 cache-stability: when a prior essaim block IS present and matched==[], the
 // no-op fast-path must NOT fire — the stale block must still be stripped (the
 // body legitimately changes). Guards the fast-path against masking the strip.
 func TestNoOpFastPathDoesNotSkipStripOfPriorBlock(t *testing.T) {

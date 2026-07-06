@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/rules"
+	"essaim/internal/rules"
 )
 
-// Bridge finding A: .oikos.bak must hold the PRISTINE original even after many
+// Bridge finding A: .essaim.bak must hold the PRISTINE original even after many
 // emits (it once overwrote the backup with a with-block version → restore would
 // re-inject a stale block instead of cleaning).
 func TestBackupKeepsPristineOriginalAcrossEmits(t *testing.T) {
@@ -27,7 +27,7 @@ func TestBackupKeepsPristineOriginalAcrossEmits(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bak, err := os.ReadFile(path + ".oikos.bak")
+	bak, err := os.ReadFile(path + ".essaim.bak")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestSentinelInBodyDoesNotCorruptNativeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	block := rules.WrapBlock("- [H] meta: the end marker is " + rules.OIKOS_END + " written literally")
+	block := rules.WrapBlock("- [H] meta: the end marker is " + rules.ESSAIM_END + " written literally")
 	if err := writeRenameFencedWithBackup(path, block); err != nil {
 		t.Fatal(err)
 	}
@@ -60,14 +60,14 @@ func TestSentinelInBodyDoesNotCorruptNativeFile(t *testing.T) {
 	if !strings.Contains(s, "important user line") {
 		t.Fatalf("user content lost:\n%q", s)
 	}
-	if n := strings.Count(s, rules.OIKOS_BEGIN); n != 1 {
+	if n := strings.Count(s, rules.ESSAIM_BEGIN); n != 1 {
 		t.Fatalf("want exactly 1 BEGIN sentinel, got %d:\n%q", n, s)
 	}
-	if n := strings.Count(s, rules.OIKOS_END); n != 1 {
+	if n := strings.Count(s, rules.ESSAIM_END); n != 1 {
 		t.Fatalf("want exactly 1 END sentinel (body END must be defanged), got %d:\n%q", n, s)
 	}
 	reg, ok := extractFencedRegion(s)
-	if !ok || !strings.HasPrefix(reg, rules.OIKOS_BEGIN) || !strings.HasSuffix(reg, rules.OIKOS_END) {
+	if !ok || !strings.HasPrefix(reg, rules.ESSAIM_BEGIN) || !strings.HasSuffix(reg, rules.ESSAIM_END) {
 		t.Fatalf("fenced region malformed: ok=%v reg=%q", ok, reg)
 	}
 }

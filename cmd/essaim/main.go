@@ -1,50 +1,50 @@
-// Command oikos is the oikosd local proxy daemon.
+// Command essaim is the essaimd local proxy daemon.
 //
 // Subcommands:
 //
-//	oikos version            print the build version
-//	oikos emit               regenerate your AGENTS.md (+ CLAUDE.md / GEMINI.md)
+//	essaim version            print the build version
+//	essaim emit               regenerate your AGENTS.md (+ CLAUDE.md / GEMINI.md)
 //	                         from the vault, ON DEMAND, with NO proxy running. The
 //	                         standalone way to keep your tool's native rules file
 //	                         current from your correction-learned vault:
-//	                           oikos emit --vault <dir> --file claude-code=./CLAUDE.md
+//	                           essaim emit --vault <dir> --file claude-code=./CLAUDE.md
 //	                         Targets/vault default from the persisted config; the
 //	                         output is byte-identical to the block the live proxy
 //	                         maintains. This is the first-class path — the proxy is
 //	                         opt-in "live mode" for continuous, per-request capture.
-//	oikos serve              run the loopback proxy on 127.0.0.1:4141 (opt-in
+//	essaim serve              run the loopback proxy on 127.0.0.1:4141 (opt-in
 //	                         "live mode": real-time correction capture + per-request
 //	                         injection for tools you point at the proxy)
-//	oikos serve --require-token
+//	essaim serve --require-token
 //	                         additionally gate /v1/* behind a 0600 loopback
 //	                         bearer token (opt-in; default is single-user-host
 //	                         trust). /health is always open.
-//	oikos wire <tool>        point a tool (cursor / claude-code / continue / …)
-//	                         at the oikos proxy through the correct channel.
-//	oikos unwire <tool>      cleanly undo `oikos wire <tool>` — restore the tool's
+//	essaim wire <tool>        point a tool (cursor / claude-code / continue / …)
+//	                         at the essaim proxy through the correct channel.
+//	essaim unwire <tool>      cleanly undo `essaim wire <tool>` — restore the tool's
 //	                         original config byte-exact (idempotent).
-//	oikos init               forced first-run demo: seed a vault + a starter rule
+//	essaim init               forced first-run demo: seed a vault + a starter rule
 //	                         that visibly overrides a model default (React
 //	                         component files → kebab-case), then print a
 //	                         copy-paste prompt + the before/after so the first
 //	                         request is a guaranteed "aha".
-//	oikos sync --remote <url>
+//	essaim sync --remote <url>
 //	                         push/pull the rule vault to YOUR git remote and
 //	                         merge it deterministically (no rule lost). Optional,
 //	                         local, $0 — the M4 sync primitive the future paid
 //	                         Team-Rule-Sync drops into.
-//	oikos join --endpoint <url> --key-file <path> [--zone <z>] [--no-verify]
-//	                         OPT-IN: connect oikos to a bus. Live-validates the key
+//	essaim join --endpoint <url> --key-file <path> [--zone <z>] [--no-verify]
+//	                         OPT-IN: connect essaim to a bus. Live-validates the key
 //	                         against the endpoint, then persists the membership
 //	                         (endpoint + zone + key-FILE reference — never the raw
 //	                         key). The server derives+enforces the real zone from
 //	                         the key. AIBUS_URL/AIBUS_KEY env override the stored
 //	                         values at use time. Default-off: no join, no socket.
-//	oikos leave              disconnect from the bus; oikos is local-only again.
-//	oikos bus                show join status; when joined, do one live poll to
+//	essaim leave              disconnect from the bus; essaim is local-only again.
+//	essaim bus                show join status; when joined, do one live poll to
 //	                         confirm the connection reaches the bus in its zone.
 //
-// On first run (no config yet) `oikos serve` prints the one-screen setup URL
+// On first run (no config yet) `essaim serve` prints the one-screen setup URL
 // http://127.0.0.1:4141/setup, where a non-technical user picks a model (a
 // cloud key or an auto-detected local LLM), a vault, and which tools to wire.
 //
@@ -70,25 +70,25 @@ import (
 	"syscall"
 	"time"
 
-	"oikos/internal/auth"
-	"oikos/internal/config"
-	"oikos/internal/emit"
-	"oikos/internal/extract"
-	"oikos/internal/heal"
-	"oikos/internal/initcmd"
-	"oikos/internal/learn"
-	"oikos/internal/rules"
-	"oikos/internal/secret"
-	"oikos/internal/server"
-	"oikos/internal/upstream"
-	"oikos/internal/wire"
+	"essaim/internal/auth"
+	"essaim/internal/config"
+	"essaim/internal/emit"
+	"essaim/internal/extract"
+	"essaim/internal/heal"
+	"essaim/internal/initcmd"
+	"essaim/internal/learn"
+	"essaim/internal/rules"
+	"essaim/internal/secret"
+	"essaim/internal/server"
+	"essaim/internal/upstream"
+	"essaim/internal/wire"
 )
 
 var version = "0.0.0-dev"
 
-// keyringService is the OS-credential-store service name oikos stores its
+// keyringService is the OS-credential-store service name essaim stores its
 // loopback token and BYOK keys under.
-const keyringService = "oikos"
+const keyringService = "essaim"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -160,20 +160,20 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: oikos <serve|emit|wire|unwire|init|sync|join|leave|bus|brain|onboard|version>")
+	fmt.Fprintln(os.Stderr, "usage: essaim <serve|emit|wire|unwire|init|sync|join|leave|bus|brain|onboard|version>")
 }
 
-// runInit implements `oikos init` — the forced first-run demo. It ensures a
+// runInit implements `essaim init` — the forced first-run demo. It ensures a
 // vault, seeds the kebab-case React starter rule, records the vault in the
 // config, and prints a copy-paste prompt + the exact before/after so a brand-new
 // user gets a GUARANTEED override on request #1.
 //
-//	oikos init                 # vault at ~/oikos-vault (or the configured one)
-//	oikos init --vault <path>  # seed the demo into <path>
+//	essaim init                 # vault at ~/essaim-vault (or the configured one)
+//	essaim init --vault <path>  # seed the demo into <path>
 func runInit(args []string, out io.Writer) error {
 	fs := flag.NewFlagSet("init", flag.ContinueOnError)
 	fs.SetOutput(out)
-	vaultFlag := fs.String("vault", "", "vault directory to create/seed (default: the configured vault, else ~/oikos-vault)")
+	vaultFlag := fs.String("vault", "", "vault directory to create/seed (default: the configured vault, else ~/essaim-vault)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func runInit(args []string, out io.Writer) error {
 	return nil
 }
 
-// firstRunBanner is the prominent message `oikos serve` prints when no config
+// firstRunBanner is the prominent message `essaim serve` prints when no config
 // exists yet. It LEADS with the wedge pitch (server.WedgePitch — the same exact
 // sentence the /setup page hero renders, one source of truth) and then points the
 // user at the one-screen setup page.
@@ -203,11 +203,11 @@ func firstRunBanner() string {
 		"  " + server.WedgePitch + "\n" +
 		"\n" +
 		"  ┌──────────────────────────────────────────────────────────┐\n" +
-		"  │  oikos is running in optional \"live mode\" (the proxy).     │\n" +
+		"  │  essaim is running in optional \"live mode\" (the proxy).     │\n" +
 		"  │                                                            │\n" +
 		"  │  The first-class path needs no proxy:                      │\n" +
-		"  │      ▸  oikos init     seed a vault + a starter rule       │\n" +
-		"  │      ▸  oikos emit     write your AGENTS.md from the vault  │\n" +
+		"  │      ▸  essaim init     seed a vault + a starter rule       │\n" +
+		"  │      ▸  essaim emit     write your AGENTS.md from the vault  │\n" +
 		"  │                                                            │\n" +
 		"  │  Want real-time correction capture? Finish setup here:     │\n" +
 		"  │      ▸  http://127.0.0.1:4141/setup                        │\n" +
@@ -231,12 +231,12 @@ func serve(args []string) error {
 	// environment-driven knobs the injection layer reads at construction, but the
 	// environment ALWAYS wins (env override is the documented final word).
 	cfg, _ := config.Load()
-	if cfg.VaultDir != "" && os.Getenv("OIKOS_VAULT") == "" {
-		_ = os.Setenv("OIKOS_VAULT", cfg.VaultDir)
+	if cfg.VaultDir != "" && os.Getenv("ESSAIM_VAULT") == "" {
+		_ = os.Setenv("ESSAIM_VAULT", cfg.VaultDir)
 	}
 	// P2-3: the native-file wired tools are resolved DIRECTLY from the config below
 	// (nativeFileToolsForServe), NOT round-tripped through the comma-delimited
-	// OIKOS_NATIVE_FILE_TOOLS env var. That round-trip silently dropped a tool whose
+	// ESSAIM_NATIVE_FILE_TOOLS env var. That round-trip silently dropped a tool whose
 	// path contained a comma (Windows paths, quoted dirs). The env var is still
 	// honoured as an explicit external override, but the config path — which is the
 	// common case — no longer passes through comma-joined strings.
@@ -262,21 +262,21 @@ func serve(args []string) error {
 
 	s, err := server.NewWithInjection(ctx, addr)
 	if err != nil {
-		return fmt.Errorf("oikos: could not initialize injection layer: %w", err)
+		return fmt.Errorf("essaim: could not initialize injection layer: %w", err)
 	}
 
 	// Resolve the BYOK upstream lazily from the credential store / env.
 	store := secret.EnvOrKeyring{
 		Keyring: secret.Keyring{Service: keyringService},
-		EnvVars: map[string]string{"openrouter-key": "OIKOS_OPENROUTER_KEY"},
+		EnvVars: map[string]string{"openrouter-key": "ESSAIM_OPENROUTER_KEY"},
 	}
 
-	// OIKOS_UPSTREAM_BASE points oikos at a specific OpenAI-compatible upstream (a
+	// ESSAIM_UPSTREAM_BASE points essaim at a specific OpenAI-compatible upstream (a
 	// local proxy, a self-hosted gateway, or the injection demo's fake upstream).
 	// It is the FINAL word on WHERE traffic goes — a fixed upstream — so a missing
 	// key/local-LLM never 401s when an explicit upstream is configured. We read it
 	// once; resolveProvider honours it on every (re)resolution.
-	upstreamBase := os.Getenv("OIKOS_UPSTREAM_BASE")
+	upstreamBase := os.Getenv("ESSAIM_UPSTREAM_BASE")
 	if upstreamBase != "" {
 		s.SetUpstreamBase(upstreamBase)
 	}
@@ -318,7 +318,7 @@ func serve(args []string) error {
 			}
 			s.SetFileEmitTools(names) // one channel per tool: proxy stays out
 			// RESPECTS-UNWIRE (P1): the emitter snapshots its wired tools once here at
-			// boot, but the user may `oikos unwire <tool>` on the RUNNING daemon. Give it
+			// boot, but the user may `essaim unwire <tool>` on the RUNNING daemon. Give it
 			// the SAME live wired-tools view heal gets (mtime-cached read of config.json)
 			// so it stops re-injecting a tool's block the moment unwire removes it — no
 			// restart. Undeterminable config ⇒ fail toward emitting (keeps guarding).
@@ -328,14 +328,14 @@ func serve(args []string) error {
 			// permanently stale with zero signal. Log each failed/refused target to stderr.
 			em.SetOnEmitProblem(func(r emit.TargetResult) {
 				if r.Name == "" {
-					fmt.Fprintf(os.Stderr, "oikos: native-file emit failed: %v\n", r.Err)
+					fmt.Fprintf(os.Stderr, "essaim: native-file emit failed: %v\n", r.Err)
 					return
 				}
 				reason := "refused (credential-bearing path)"
 				if r.Err != nil {
 					reason = r.Err.Error()
 				}
-				fmt.Fprintf(os.Stderr, "oikos: native-file emit to %q (%s) did not apply: %s\n",
+				fmt.Fprintf(os.Stderr, "essaim: native-file emit to %q (%s) did not apply: %s\n",
 					r.NativeFile, r.Name, reason)
 			})
 			if store := s.Store(); store != nil {
@@ -346,19 +346,19 @@ func serve(args []string) error {
 	}
 
 	// Config-drift self-heal: when base_url tools are wired, watch their IDE config
-	// files and re-apply the oikos proxy base_url ONLY if an IDE update clobbers
-	// oikos's own value (a vendor-default reset or a dropped key). A base_url a user
+	// files and re-apply the essaim proxy base_url ONLY if an IDE update clobbers
+	// essaim's own value (a vendor-default reset or a dropped key). A base_url a user
 	// deliberately set to something else is left alone — the watcher never fights
 	// the user. This is STRICTLY off the request hot path — it runs in the watcher's
 	// own goroutine doing only LOCAL file I/O (no network, no proxy involvement) —
 	// and is opt-in: it starts only when there is a wired base_url tool with a
 	// config file present.
 	//
-	// Two disable controls: OIKOS_NO_HEAL=1 turns it off at boot, and a LIVE
+	// Two disable controls: ESSAIM_NO_HEAL=1 turns it off at boot, and a LIVE
 	// kill-switch flag file (heal.disabled next to the config) turns it off WITHOUT
-	// a restart — `touch` it to pause healing, `rm` it to resume. `oikos unwire`
+	// a restart — `touch` it to pause healing, `rm` it to resume. `essaim unwire`
 	// also drops a tool's target.
-	if !envTruthy(os.Getenv("OIKOS_NO_HEAL")) {
+	if !envTruthy(os.Getenv("ESSAIM_NO_HEAL")) {
 		startSelfHeal(ctx)
 	}
 
@@ -367,33 +367,33 @@ func serve(args []string) error {
 	//
 	// P1-6b: route the token through EnvOrKeyring (the SAME env-first fallback the
 	// BYOK key uses) so a headless box with no OS Secret Service (WSL/server) can
-	// supply OIKOS_LOOPBACK_TOKEN instead of crashing on go-keyring. When neither
+	// supply ESSAIM_LOOPBACK_TOKEN instead of crashing on go-keyring. When neither
 	// the env var nor the keyring works, auth returns ErrKeyringUnavailable, which
 	// we surface as a clean one-line error and exit — never a go-keyring panic.
 	if *requireToken {
 		tokenStore := secret.EnvOrKeyring{
 			Keyring: secret.Keyring{Service: keyringService},
-			EnvVars: map[string]string{"loopback-token": "OIKOS_LOOPBACK_TOKEN"},
+			EnvVars: map[string]string{"loopback-token": "ESSAIM_LOOPBACK_TOKEN"},
 		}
 		token, err := auth.LoadOrCreateToken(tokenStore)
 		if err != nil {
 			return err // already a clear, actionable one-liner (ErrKeyringUnavailable)
 		}
 		s.SetToken(token)
-		fmt.Fprintln(os.Stderr, "oikos: --require-token enabled; /v1/* requires the loopback bearer token")
+		fmt.Fprintln(os.Stderr, "essaim: --require-token enabled; /v1/* requires the loopback bearer token")
 	}
 
 	l, err := s.Listen()
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stderr, "oikos %s listening on http://%s\n", version, addr)
+	fmt.Fprintf(os.Stderr, "essaim %s listening on http://%s\n", version, addr)
 
 	// First-run detection: no persisted config AND no key/local-LLM steering via
 	// env ⇒ the user has nothing set up. Print the one-screen setup URL
 	// prominently (the front door). Headless boxes still get a clear, copyable URL
 	// — we never auto-open a browser from a non-interactive process.
-	if cfg.IsEmpty() && os.Getenv("OIKOS_VAULT") == "" {
+	if cfg.IsEmpty() && os.Getenv("ESSAIM_VAULT") == "" {
 		fmt.Fprint(os.Stderr, firstRunBanner())
 	}
 
@@ -443,7 +443,7 @@ func serveGraceful(ctx context.Context, l net.Listener, h http.Handler, stopSign
 		// Signal received. Stop catching further signals so a second Ctrl-C hard-kills
 		// (the user asked twice). Then drain in-flight requests up to shutdownGrace.
 		stopSignals()
-		fmt.Fprintf(os.Stderr, "oikos: shutting down (draining in-flight requests, up to %s)…\n", shutdownGrace)
+		fmt.Fprintf(os.Stderr, "essaim: shutting down (draining in-flight requests, up to %s)…\n", shutdownGrace)
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGrace)
 		defer cancel()
@@ -451,7 +451,7 @@ func serveGraceful(ctx context.Context, l net.Listener, h http.Handler, stopSign
 			// Drain timed out (a wedged connection) — force-close the rest so the
 			// process can exit. This is the ONLY path that abandons a relay, and only
 			// after a full grace window.
-			fmt.Fprintf(os.Stderr, "oikos: graceful drain did not finish within %s (%v); closing remaining connections\n", shutdownGrace, err)
+			fmt.Fprintf(os.Stderr, "essaim: graceful drain did not finish within %s (%v); closing remaining connections\n", shutdownGrace, err)
 			_ = srv.Close()
 		}
 		// Reap the Serve goroutine's return (ErrServerClosed after Shutdown/Close).
@@ -483,33 +483,33 @@ func startSelfHeal(ctx context.Context) {
 	}
 	w := heal.New(targets)
 	// Surface heal-pass errors (chiefly an unparseable IDE config) on stderr so an
-	// un-healable config the user thinks oikos is guarding is VISIBLE, not silently
+	// un-healable config the user thinks essaim is guarding is VISIBLE, not silently
 	// swallowed by the background watcher (P1).
 	w.SetOnError(func(err error) {
-		fmt.Fprintf(os.Stderr, "oikos: config-drift self-heal could not heal a config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "essaim: config-drift self-heal could not heal a config: %v\n", err)
 	})
 	// RESPECTS-UNWIRE (P1): the heal targets are built once here at boot, but the
-	// user may `oikos unwire <tool>` on the RUNNING daemon. Give the watcher a live
+	// user may `essaim unwire <tool>` on the RUNNING daemon. Give the watcher a live
 	// view of the wired-tools set (mtime-cached read of config.json) so it stops
 	// healing a tool the moment unwire removes it — no restart, no fighting the undo.
 	w.SetLiveTools(wire.LiveWiredTools())
 	// Live kill-switch: a flag file next to the config disables healing without a
 	// restart (checked on every pass). Best-effort — if we can't resolve the config
-	// dir we simply run without a live switch (OIKOS_NO_HEAL still works at boot).
+	// dir we simply run without a live switch (ESSAIM_NO_HEAL still works at boot).
 	if flag := healDisableFlagPath(); flag != "" {
 		w.SetDisableFlagPath(flag)
 	}
 	if err := w.Start(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "oikos: config-drift self-heal could not start (continuing without it): %v\n", err)
+		fmt.Fprintf(os.Stderr, "essaim: config-drift self-heal could not start (continuing without it): %v\n", err)
 		return
 	}
-	fmt.Fprintf(os.Stderr, "oikos: config-drift self-heal watching %d IDE config file(s) "+
+	fmt.Fprintf(os.Stderr, "essaim: config-drift self-heal watching %d IDE config file(s) "+
 		"(pause anytime: touch %s)\n", len(targets), healDisableFlagPath())
 }
 
 // healDisableFlagPath is the live kill-switch file. While it exists, the self-heal
 // watcher heals nothing (no restart needed). It sits beside the persisted config
-// (same directory as config.Path), so it travels with the user's oikos state and
+// (same directory as config.Path), so it travels with the user's essaim state and
 // needs no extra configuration. Returns "" if the config path can't be resolved.
 func healDisableFlagPath() string {
 	p, err := config.Path()
@@ -529,7 +529,7 @@ func envTruthy(v string) bool {
 // emit.Tool targets, read DIRECTLY off the config (no comma-delimited string in
 // between). base_url tools have no native file and are skipped. A comma in a
 // NativeFile path (a Windows path, a quoted dir) is carried through intact —
-// the pre-P2-3 code joined these with commas into OIKOS_NATIVE_FILE_TOOLS and the
+// the pre-P2-3 code joined these with commas into ESSAIM_NATIVE_FILE_TOOLS and the
 // re-parse dropped the tool after the comma.
 func nativeFileToolsFromConfig(cfg config.Config) []emit.Tool {
 	var out []emit.Tool
@@ -541,8 +541,8 @@ func nativeFileToolsFromConfig(cfg config.Config) []emit.Tool {
 	return out
 }
 
-// nativeFileToolsForServe resolves the native-file emit targets for `oikos serve`
-// with precedence: an explicit OIKOS_NATIVE_FILE_TOOLS env override wins (the
+// nativeFileToolsForServe resolves the native-file emit targets for `essaim serve`
+// with precedence: an explicit ESSAIM_NATIVE_FILE_TOOLS env override wins (the
 // documented external knob, legacy `name=path,name=path` form), else the wired
 // tools are taken DIRECTLY from the persisted config. Resolving from the config
 // avoids the comma round-trip entirely, so a path containing a comma survives
@@ -556,7 +556,7 @@ func nativeFileToolsForServe(cfg config.Config) []emit.Tool {
 
 // resolveProviderChoice is the pure provider-selection decision shared by startup
 // and the P0-3 hot-reload path. Precedence:
-//  1. fixedUpstream (OIKOS_UPSTREAM_BASE set) → a FIXED upstream (no real dial);
+//  1. fixedUpstream (ESSAIM_UPSTREAM_BASE set) → a FIXED upstream (no real dial);
 //     carry the key so an authenticated fixed gateway still gets Authorization.
 //  2. cfgProvider == "local" → force the keyless local-detection path EVEN IF an
 //     OpenRouter key happens to be stored — honour the user's "local" choice and
@@ -596,18 +596,18 @@ func detectLocalLLM() (string, bool) {
 }
 
 // extractConfigFromEnv builds the T2 extract gate config from the environment
-// (M3-R6). T2 is DEFAULT OFF: OIKOS_EXTRACT_ALLOW_CLOUD must be a truthy value
+// (M3-R6). T2 is DEFAULT OFF: ESSAIM_EXTRACT_ALLOW_CLOUD must be a truthy value
 // to enable it, AND a Gate must be wired. In v1 the cloud Gate is intentionally
 // left nil (no metered-API caller is shipped here — local-preferred T2 + the
 // real Gate wiring land in a follow-up); so even with allow_cloud=true, T2 is a
 // no-op until a Gate is configured. This keeps "no silent cloud upload" true by
-// construction. OIKOS_EXTRACT_COST_CAP sets the visible per-day cost cap.
+// construction. ESSAIM_EXTRACT_COST_CAP sets the visible per-day cost cap.
 func extractConfigFromEnv() extract.Config {
 	cfg := extract.Config{}
-	if v := strings.TrimSpace(os.Getenv("OIKOS_EXTRACT_ALLOW_CLOUD")); v != "" {
+	if v := strings.TrimSpace(os.Getenv("ESSAIM_EXTRACT_ALLOW_CLOUD")); v != "" {
 		cfg.AllowCloud = v == "1" || strings.EqualFold(v, "true") || strings.EqualFold(v, "yes")
 	}
-	if v := os.Getenv("OIKOS_EXTRACT_COST_CAP"); v != "" {
+	if v := os.Getenv("ESSAIM_EXTRACT_COST_CAP"); v != "" {
 		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.CostCapPerDay = f
 		}
@@ -615,12 +615,12 @@ func extractConfigFromEnv() extract.Config {
 	return cfg
 }
 
-// nativeFileToolsFromEnv parses OIKOS_NATIVE_FILE_TOOLS — a comma-separated list
+// nativeFileToolsFromEnv parses ESSAIM_NATIVE_FILE_TOOLS — a comma-separated list
 // of `name=path` pairs (e.g. `claude-code=./CLAUDE.md,codex=./AGENTS.md`) — into
 // the wired NativeFileEmitter targets (opt-in per tool, §5.4 B-6). Empty/unset ⇒
 // no native-file emission (the default).
 func nativeFileToolsFromEnv() []emit.Tool {
-	raw := strings.TrimSpace(os.Getenv("OIKOS_NATIVE_FILE_TOOLS"))
+	raw := strings.TrimSpace(os.Getenv("ESSAIM_NATIVE_FILE_TOOLS"))
 	if raw == "" {
 		return nil
 	}

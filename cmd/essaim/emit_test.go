@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"oikos/internal/config"
+	"essaim/internal/config"
 )
 
 // liveRule is a minimal, well-formed live rule the standalone emitter must rank
@@ -33,18 +33,18 @@ func seedVault(t *testing.T) string {
 	return vault
 }
 
-// `oikos emit --vault <v> --file claude-code=<path>` regenerates the ranked LIVE
+// `essaim emit --vault <v> --file claude-code=<path>` regenerates the ranked LIVE
 // block into the target native file WITHOUT a proxy running — the standalone path.
 func TestRunEmitStandaloneWritesBlock(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	vault := seedVault(t)
 	target := filepath.Join(home, "AGENTS.md")
 	// Pre-existing user content the emitter must preserve.
-	if err := os.WriteFile(target, []byte("# My Project\n\nUser content oikos must never touch.\n"), 0o644); err != nil {
+	if err := os.WriteFile(target, []byte("# My Project\n\nUser content essaim must never touch.\n"), 0o644); err != nil {
 		t.Fatalf("seed target: %v", err)
 	}
 
@@ -59,9 +59,9 @@ func TestRunEmitStandaloneWritesBlock(t *testing.T) {
 	}
 	got := string(raw)
 	for _, want := range []string{
-		"<!-- oikos:rules:begin",
+		"<!-- essaim:rules:begin",
 		"Always use the PostgreSQL database, never MySQL.",
-		"User content oikos must never touch.", // user content preserved
+		"User content essaim must never touch.", // user content preserved
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("emitted file missing %q:\n%s", want, got)
@@ -72,13 +72,13 @@ func TestRunEmitStandaloneWritesBlock(t *testing.T) {
 	}
 }
 
-// With no --file flag and no OIKOS_NATIVE_FILE_TOOLS, `oikos emit` falls back to
+// With no --file flag and no ESSAIM_NATIVE_FILE_TOOLS, `essaim emit` falls back to
 // the persisted config's native_file wired tools.
 func TestRunEmitUsesConfiguredTools(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	vault := seedVault(t)
 	target := filepath.Join(home, "CLAUDE.md")
@@ -103,13 +103,13 @@ func TestRunEmitUsesConfiguredTools(t *testing.T) {
 	}
 }
 
-// `oikos emit` with no native-file targets at all is a clear, non-crashing error
+// `essaim emit` with no native-file targets at all is a clear, non-crashing error
 // (nothing to write into) rather than a silent no-op.
 func TestRunEmitNoTargetsErrors(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	vault := seedVault(t)
 	var out bytes.Buffer
@@ -120,13 +120,13 @@ func TestRunEmitNoTargetsErrors(t *testing.T) {
 }
 
 // Pre-public hardening (review follow-up #3): "first non-empty wins". A SET but
-// malformed OIKOS_NATIVE_FILE_TOOLS must NOT silently fall through to the config
+// malformed ESSAIM_NATIVE_FILE_TOOLS must NOT silently fall through to the config
 // target — the env var was non-empty, so it WINS; since it parses to no valid
 // target, that is an explicit error, not a silent config write.
 func TestRunEmitMalformedEnvErrorsNotFallthrough(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
 
 	vault := seedVault(t)
 	cfgTarget := filepath.Join(home, "CONFIG_TARGET.md")
@@ -139,14 +139,14 @@ func TestRunEmitMalformedEnvErrorsNotFallthrough(t *testing.T) {
 	}
 
 	// Non-empty but malformed env (no `name=path` pair parses).
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "garbage")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "garbage")
 
 	var out bytes.Buffer
 	err := runEmit([]string{"--vault", vault}, &out)
 	if err == nil {
-		t.Fatalf("malformed OIKOS_NATIVE_FILE_TOOLS must error (first non-empty wins), got nil (output: %q)", out.String())
+		t.Fatalf("malformed ESSAIM_NATIVE_FILE_TOOLS must error (first non-empty wins), got nil (output: %q)", out.String())
 	}
-	if !strings.Contains(err.Error(), "OIKOS_NATIVE_FILE_TOOLS") {
+	if !strings.Contains(err.Error(), "ESSAIM_NATIVE_FILE_TOOLS") {
 		t.Fatalf("error should name the offending env var; got: %v", err)
 	}
 	// And it must NOT have silently written the config target.
@@ -155,12 +155,12 @@ func TestRunEmitMalformedEnvErrorsNotFallthrough(t *testing.T) {
 	}
 }
 
-// A WELL-FORMED OIKOS_NATIVE_FILE_TOOLS still wins over config (the happy path of
+// A WELL-FORMED ESSAIM_NATIVE_FILE_TOOLS still wins over config (the happy path of
 // "first non-empty wins" — proves the malformed case is the only one that errors).
 func TestRunEmitWellFormedEnvWinsOverConfig(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
 
 	vault := seedVault(t)
 	envTarget := filepath.Join(home, "ENV_TARGET.md")
@@ -171,7 +171,7 @@ func TestRunEmitWellFormedEnvWinsOverConfig(t *testing.T) {
 	if err := config.Save(cfg); err != nil {
 		t.Fatalf("save config: %v", err)
 	}
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "codex="+envTarget)
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "codex="+envTarget)
 
 	var out bytes.Buffer
 	if err := runEmit([]string{"--vault", vault}, &out); err != nil {
@@ -191,9 +191,9 @@ func TestRunEmitWellFormedEnvWinsOverConfig(t *testing.T) {
 // "wrote N rules".
 func TestRunEmitSummaryReportsRefusedTarget(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	vault := seedVault(t)
 	// A path that trips the credential pattern (an embedded AKIA access key id).
@@ -215,13 +215,13 @@ func TestRunEmitSummaryReportsRefusedTarget(t *testing.T) {
 	}
 }
 
-// `oikos emit` is idempotent: a second run over an unchanged vault leaves the
+// `essaim emit` is idempotent: a second run over an unchanged vault leaves the
 // target byte-identical (it must not append a second block or duplicate content).
 func TestRunEmitIdempotent(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("OIKOS_CONFIG", filepath.Join(home, "config.json"))
-	t.Setenv("OIKOS_VAULT", "")
-	t.Setenv("OIKOS_NATIVE_FILE_TOOLS", "")
+	t.Setenv("ESSAIM_CONFIG", filepath.Join(home, "config.json"))
+	t.Setenv("ESSAIM_VAULT", "")
+	t.Setenv("ESSAIM_NATIVE_FILE_TOOLS", "")
 
 	vault := seedVault(t)
 	target := filepath.Join(home, "AGENTS.md")

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"oikos/internal/inject"
-	"oikos/internal/upstream"
+	"essaim/internal/inject"
+	"essaim/internal/upstream"
 )
 
 // contextOverflowSignatures are the upstream error-body markers that mean the
@@ -66,7 +66,7 @@ func removeHopByHop(h http.Header) {
 
 // chatCompletions handles POST /v1/chat/completions. It resolves the upstream
 // (zero-key → a 401 with a setup deep-link), runs the B1 request-side injection
-// (strip-then-inject one leading oikos rule block, fail-open to the verbatim
+// (strip-then-inject one leading essaim rule block, fail-open to the verbatim
 // original bytes on any overrun/panic), then relays the upstream response
 // VERBATIM (byte-for-byte, per-chunk flush). The response stream is NEVER
 // mutated — injection is request-side only (spec §B1).
@@ -80,7 +80,7 @@ func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request) {
 	// Read the ORIGINAL bytes VERBATIM first — the fail-open anchor (spec §5.1).
 	origBody, err := io.ReadAll(r.Body)
 	if err != nil {
-		writeOpenAIError(w, http.StatusBadGateway, "oikos: could not read request body: "+err.Error())
+		writeOpenAIError(w, http.StatusBadGateway, "essaim: could not read request body: "+err.Error())
 		return
 	}
 	_ = r.Body.Close()
@@ -112,7 +112,7 @@ func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request) {
 			// Honest miss (ErrNoMatch / ErrIndexEmpty / ErrSkip): NOT degraded.
 			// On ErrNoMatch the stripped-only body is safe to forward; on
 			// ErrSkip/ErrIndexEmpty `built` == origBody. The snapshot still carries the
-			// clean (oikos-free) messages so a no-match turn is still captured.
+			// clean (essaim-free) messages so a no-match turn is still captured.
 			body = built
 			injected = !bytes.Equal(built, origBody) // a stale block may have been stripped
 			snap = sn
@@ -123,10 +123,10 @@ func (s *Server) chatCompletions(w http.ResponseWriter, r *http.Request) {
 	// BR-A2-15). nil when capture is disabled or there is no clean snapshot.
 	cc := s.newCaptureCtx(snap)
 
-	// F-B: when oikos mutated the body (injected a block), a 413 / context-overflow
-	// upstream response may be oikos's own doing — it could have pushed a request
+	// F-B: when essaim mutated the body (injected a block), a 413 / context-overflow
+	// upstream response may be essaim's own doing — it could have pushed a request
 	// that fit the model's window over it. Retry EXACTLY ONCE with the verbatim
-	// ORIGINAL body so oikos never makes a request that would have worked fail.
+	// ORIGINAL body so essaim never makes a request that would have worked fail.
 	// When the body is unchanged (no injection), there is nothing to retry with.
 	s.forwardChat(w, r, up, "/v1/chat/completions", body, origBody, injected, cc)
 }
@@ -153,7 +153,7 @@ func (s *Server) relay(w http.ResponseWriter, r *http.Request, up upstream.Upstr
 // forwardChat forwards the (possibly injected) chat request body and relays the
 // response verbatim, with the F-B 413/context-overflow retry-once on top: if the
 // body was injected AND the upstream returns 413 (or an error-status body that
-// matches a context-overflow signature), oikos re-sends the EXACT unmutated
+// matches a context-overflow signature), essaim re-sends the EXACT unmutated
 // origBody exactly once, marks the server degraded, and relays THAT response. The
 // retry budget is one (A-2.4): a second 413 (even on the clean body) is relayed
 // verbatim, never a third attempt.
@@ -168,7 +168,7 @@ func (s *Server) forwardChat(w http.ResponseWriter, r *http.Request, up upstream
 		return
 	}
 
-	// Decide whether this is an oikos-caused overflow we must retry. Only when we
+	// Decide whether this is an essaim-caused overflow we must retry. Only when we
 	// actually injected AND have an alternative (the smaller origBody) to try.
 	if injected {
 		overflow := resp.StatusCode == http.StatusRequestEntityTooLarge
@@ -182,7 +182,7 @@ func (s *Server) forwardChat(w http.ResponseWriter, r *http.Request, up upstream
 		if overflow {
 			_ = resp.Body.Close()
 			if s.inj != nil {
-				s.inj.markDegraded() // F-B / spec §5.5: an oikos-caused overflow is degraded
+				s.inj.markDegraded() // F-B / spec §5.5: an essaim-caused overflow is degraded
 			}
 			// Retry-once with the verbatim ORIGINAL (un-injected) body.
 			retryResp, rerr := s.doUpstream(r, up, path, bytes.NewReader(origBody))
@@ -213,7 +213,7 @@ func (s *Server) forwardChat(w http.ResponseWriter, r *http.Request, up upstream
 // captureIf2xx returns cc for a 2xx upstream status and nil otherwise. A non-2xx
 // response (4xx/5xx incl 429/500) must never be fed to the capture/learn pipeline
 // (P2-2): the error body is not an assistant answer, so learning from it would
-// reinforce rules against a failed turn. Success is the ONLY status oikos learns
+// reinforce rules against a failed turn. Success is the ONLY status essaim learns
 // from.
 func captureIf2xx(status int, cc *captureCtx) *captureCtx {
 	if status >= 200 && status < 300 {
@@ -230,7 +230,7 @@ func captureIf2xx(status int, cc *captureCtx) *captureCtx {
 func (s *Server) forward(w http.ResponseWriter, r *http.Request, up upstream.Upstream, path string, body io.Reader) {
 	resp, err := s.doUpstream(r, up, path, body)
 	if err != nil {
-		// Fail-open: relay the upstream error through rather than 500-ing oikos.
+		// Fail-open: relay the upstream error through rather than 500-ing essaim.
 		writeOpenAIError(w, http.StatusBadGateway, "upstream error: "+err.Error())
 		return
 	}
