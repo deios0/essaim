@@ -2,12 +2,15 @@
 
 # oikos
 
-### Your AI stops repeating mistakes.
+### Stop running your AI in a silo.
 
-**A local memory that learns the corrections you give your AI — and makes them stick
-across every tool.** Fix something once in Cursor, and Claude Code, Codex and Gemini
-stop making that same mistake too. You bring your own keys; oikos is a single white,
-pure-Go binary that's inert until you use it — nothing leaves your machine, ever.
+**oikos puts your AI on a shared bus — where your tools, your agents, and your teammates
+talk to each other, coordinate in real time, and learn together.** Correct something once
+and it spreads: to your other tools, to your agents, to your whole team. A single white,
+BYOK, pure-Go binary — inert until you use it, nothing leaves your machine unless you say so.
+
+*Not another local notes app. There are hundreds of thousands of those. oikos is the one
+that's **connected**.*
 
 [![release](https://img.shields.io/github/v/release/deios0/oikos?color=0b7cc4&label=release)](https://github.com/deios0/oikos/releases)
 [![license](https://img.shields.io/badge/license-Apache--2.0-0b7cc4)](LICENSE)
@@ -23,23 +26,27 @@ curl -fsSL https://raw.githubusercontent.com/deios0/oikos/master/scripts/install
 
 ---
 
-Every AI tool forgets. You correct Cursor — *"use PostgreSQL, not MySQL"* — and tomorrow
-Codex suggests MySQL again. The fix you already taught doesn't travel: not to the next
-tool, not to next week. Your preferences live in your head; the model starts from zero
-every session.
+Every AI tool today is an island. Cursor doesn't know what you told Claude Code. Your
+agents don't coordinate. Your teammate re-learns the same lesson you learned last week.
+Each tool forgets, and none of them talk to each other — so knowledge never compounds.
 
-**oikos is the memory layer that fixes this.** It captures the corrections you give your
-AI, distills each into an editable Markdown rule you own, ranks them, and feeds the
-relevant ones back into every tool — so a preference you teach once *stays taught*,
-everywhere. The leverage is the layer **above** the model — a correction ledger that's
-yours and portable — so it keeps paying off even as models plateau.
+**oikos is the connective layer.** It gives your AI a shared bus and a shared, learning
+memory:
 
-It rides the open [`AGENTS.md` standard](https://agents.md) (one file → Cursor, Claude
-Code, Codex, Gemini all read it) and adds the one thing a static file can't do: **it
-learns.** Optionally, it can also sit live between your tools and the model, catching
-corrections the moment you make them. And when you're ready for a team, the same binary
-[connects to a shared server](#team-tier--connect-to-a-server-optional) so your whole
-team's corrections compound together.
+- **Talk.** A realtime event bus (**aibus**) so your tools, background agents, and
+  machines coordinate live — one AI's work becomes another's context, across your whole
+  setup and your team.
+- **Learn together.** Corrections you (or a teammate) give your AI become editable
+  Markdown rules in a shared, ranked memory — taught once, they hold for everyone, in
+  every tool.
+- **Zones.** Onboarding a person is *"install the binary + one key."* Access is
+  server-enforced per zone — a walled shared brain for you, your team, or a community.
+
+The leverage is the layer **above** the model — orchestration, shared memory, coordination
+— *not* raw model IQ, so it keeps paying off even as models plateau. Run it solo and it
+already unifies your own tools into one learning memory (riding the open
+[`AGENTS.md` standard](https://agents.md)); [connect it to a bus](#team-tier--the-shared-bus)
+and it becomes a shared brain for your agents and your team.
 
 ---
 
@@ -67,9 +74,8 @@ your AI corrections ──▶ oikos vault (editable .md rules, ranked) ──▶
    live proxy on), and every tool reflects the latest ranked set. A static file you maintain
    by hand can't do that.
 
-The leverage is the layer *above* the model — a ranked, correction-learned rule ledger that's
-yours and follows you across every tool — not the model itself, so it keeps paying off even as
-models plateau.
+That's one node. [Connect it to a bus](#team-tier--the-shared-bus) and the same loop runs
+across your agents and your team — everyone's corrections compounding into one shared memory.
 
 ---
 
@@ -112,9 +118,10 @@ oikos emit --file claude-code=./CLAUDE.md \
 oikos emit                                   # uses the vault + native files from config
 ```
 
-That's the whole product. No proxy, no service, no account — `oikos emit` reads your vault
-and writes your native rules files. Drop more `.md` rules into the vault (or let oikos learn
-them), re-run `oikos emit`, and every tool stays current.
+That's the local core — solo, no proxy, no service, no account. `oikos emit` reads your vault
+and writes your native rules files. Drop more `.md` rules in (or let oikos learn them), re-run
+`oikos emit`, and every tool stays current. When you want your agents and team in the loop,
+[join a bus](#team-tier--the-shared-bus).
 
 ---
 
@@ -143,7 +150,7 @@ byte-identical to what `oikos emit` produces.
 
 ---
 
-## Team tier — connect to a server (optional)
+## Team tier — the shared bus
 
 Everything above is **free, local, and needs no account.** But a solo vault is only half the
 idea. Point oikos at an **oikos server** and it becomes a team's shared brain:
