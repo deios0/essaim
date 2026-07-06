@@ -46,10 +46,10 @@ func TestGoogleTokensRedacted(t *testing.T) {
 // on the distinctive prefixes, not a broad high-entropy gate.
 func TestGoogleTokenPatternsNoFalsePositive(t *testing.T) {
 	prose := []string{
-		"the answer is 1//2 of the total budget",              // a fraction, not 1//<token>
-		"drive on the D1//D2 road toward the coast",           // 1//D2 is short, not a token
-		"I prefer to use the ya29 highway near home",          // ya29 without a dot
-		"see figure ya29.1 in the appendix for details",       // ya29. but short numeric, not a token
+		"the answer is 1//2 of the total budget",               // a fraction, not 1//<token>
+		"drive on the D1//D2 road toward the coast",            // 1//D2 is short, not a token
+		"I prefer to use the ya29 highway near home",           // ya29 without a dot
+		"see figure ya29.1 in the appendix for details",        // ya29. but short numeric, not a token
 		"always avoid inheritance; prefer composition instead", // ordinary preference
 		"use PostgreSQL not MySQL because it is the rule",      // ordinary preference
 		"the ratio was 1//3 then 1//4 across the quarters",     // fractions

@@ -181,6 +181,8 @@ func (e *Emitter) OnIndexSwap(ix *rules.Index) {
 		// failed or refused target is surfaced (P1) rather than going stale silently.
 		_, results, err := e.emit(ix)
 		e.reportProblems(results, err)
+		e.signalEmitDone() // AFTER reportProblems: a test waiting on the signal is
+		//                    guaranteed to observe the problem sink already filled.
 		return
 	}
 	e.mu.Lock()
@@ -194,6 +196,9 @@ func (e *Emitter) OnIndexSwap(ix *rules.Index) {
 		// Debounced-timer path: same — do not discard the outcome (P1/P2).
 		_, results, err := e.emit(target)
 		e.reportProblems(results, err)
+		e.signalEmitDone() // AFTER reportProblems (see the immediate path): the
+		//                    onEmitDone seam must fire only once the problem sink
+		//                    is filled, or a test racing on the signal reads it empty.
 	})
 }
 
@@ -248,6 +253,7 @@ type TargetResult struct {
 // block it wrote (or the empty-fenced block when there is no live rule).
 func (e *Emitter) EmitNow(ix *rules.Index) (string, error) {
 	block, _, err := e.emit(ix)
+	e.signalEmitDone()
 	return block, err
 }
 
@@ -255,16 +261,18 @@ func (e *Emitter) EmitNow(ix *rules.Index) (string, error) {
 // `oikos emit` CLI) can report which targets were written, skipped, refused, or
 // failed instead of asserting "wrote N rules" for every target unconditionally.
 func (e *Emitter) EmitNowWithResults(ix *rules.Index) (string, []TargetResult, error) {
-	return e.emit(ix)
+	block, results, err := e.emit(ix)
+	e.signalEmitDone()
+	return block, results, err
 }
 
 // emit renders the live-only eager block and writes it to every wired tool. It
-// always fires onEmitDone (when set) on return, so a test can wait for a
-// debounced write deterministically. It returns a per-target result slice (one
-// entry per wired tool, in order) alongside the rendered block.
+// returns a per-target result slice (one entry per wired tool, in order)
+// alongside the rendered block. It does NOT fire onEmitDone itself — each caller
+// signals AFTER it has finished its own post-processing (the daemon paths signal
+// after reportProblems), so a test waiting on the seam is guaranteed to observe
+// that processing complete, not race it.
 func (e *Emitter) emit(ix *rules.Index) (string, []TargetResult, error) {
-	defer e.signalEmitDone()
-
 	res, err := ix.EmitEager(e.cfg)
 	if errors.Is(err, rules.ErrNoMatch) || errors.Is(err, rules.ErrIndexEmpty) {
 		res = rules.GuardResult{} // empty live set → empty (but well-fenced) region
