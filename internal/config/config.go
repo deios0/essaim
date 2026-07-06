@@ -60,12 +60,25 @@ type Config struct {
 	VaultDir string `json:"vault_dir,omitempty"`
 	// WiredTools is the set of tools the user has wired to oikos.
 	WiredTools []WiredTool `json:"wired_tools,omitempty"`
+	// Bus is the opt-in aibus join (nil = not joined; default-off, no bus). It
+	// records WHERE to reach the bus and WHICH zone key file to present — never
+	// the raw key (the key stays in its file, e.g. ~/.bridge/keys/...).
+	Bus *BusJoin `json:"bus,omitempty"`
+}
+
+// BusJoin is a persisted opt-in bus membership. The zone is informational only —
+// the server derives and enforces the real zone from the key. KeyFile points at
+// the existing zone key on disk; the raw key is never stored in config.json.
+type BusJoin struct {
+	URL     string `json:"url"`
+	Zone    string `json:"zone,omitempty"`
+	KeyFile string `json:"key_file,omitempty"`
 }
 
 // IsEmpty reports whether no setup has happened yet (first run). A binary that
 // has only ever been installed returns true.
 func (c Config) IsEmpty() bool {
-	return c.Provider == "" && c.VaultDir == "" && len(c.WiredTools) == 0
+	return c.Provider == "" && c.VaultDir == "" && len(c.WiredTools) == 0 && c.Bus == nil
 }
 
 // identity is the key a WiredTool is deduplicated by. A native-file tool is keyed
